@@ -1,0 +1,12 @@
+{
+	"name": "geo_street_address_us",
+	"authors": [
+		"Chad Joan",
+		"Nicholas Piasecki",
+		"Schuyler D. Erle"
+	],
+	"description": "A D port (of the C# port) of the Perl CPAN module Geo::StreetAddress::US.",
+	"copyright": "Copyright (C) 2017, Chad Joan; Copyright (C) 2005 by Schuyler D. Erle",
+	"license": "GPL-1.0 or later or Artistic-2.0 or Perl",
+	"stringImportPaths":["source/geo/street_address/us/config"]
+}
