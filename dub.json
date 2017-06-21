@@ -1,7 +1,7 @@
 {
 	"name": "geo_street_address_us",
-	"targetType": "sourceLibrary",
-	"targetPath" : "./bin/",
+	"targetType": "library",
+	"targetPath" : "./lib/",
 	"authors": [
 		"Chad Joan",
 		"Nicholas Piasecki",
@@ -11,12 +11,14 @@
 	"copyright": "Copyright (C) 2017, Chad Joan; Copyright (C) 2005 by Schuyler D. Erle",
 	"license": "GPL-1.0 or later or Artistic-2.0 or Perl",
 	"stringImportPaths":["source/geo/street_address/us/config"],
-	"excludedSourceFiles" : ["./source/app.d"],
+	"excludedSourceFiles" : ["./source/geo/street_address/us/main.d"],
 	"configurations": [
 		{
-			"name": "testing",
+			"name": "interactive",
 			"targetType" : "executable",
-			"mainSourceFile" : "./source/app.d"
+			"targetName" : "street_address_parser_us",
+			"targetPath" : "./bin/",
+			"mainSourceFile" : "./source/geo/street_address/us/main.d"
 		}
 	]
 }

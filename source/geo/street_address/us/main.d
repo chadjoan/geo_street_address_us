@@ -1,4 +1,6 @@
-import geo.street_address.us.parser;
+module geo.street_address.us.main;
+
+import geo.street_address.us;
 
 void main(string[] args)
 {
