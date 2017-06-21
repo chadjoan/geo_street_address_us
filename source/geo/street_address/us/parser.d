@@ -261,7 +261,8 @@ private static void InitializeRegex()
 	import std.format;
 	import std.range : chain;
 	import std.regex;
-	import std.utf : toUTF8;
+	// import std.utf : toUTF8; <- deprecation message due to a toUTF8 overload.
+	import std.utf;
 
 	enum string suffixPattern =
 		chain(suffixesArray.leftColumn, suffixesArray.rightColumn.uniq).join("|");

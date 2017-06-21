@@ -2,11 +2,41 @@
 
 import geo.street_address.us.parser;
 
+debug import std.stdio;
+
 unittest
+{
+	debug writeln("Unittesting ", __MODULE__);
+	RegexAndResultTerminologyAgree();
+	CanParseTypicalAddressWithoutPunctuationAfterStreetLine();
+	CanParseTypicalAddressWithPunctuation();
+	CanParseAddressWithRangelessSecondaryUnit();
+	CanParsePostOfficeBoxAddress();
+	CanParseMilitaryAddress();
+	CanParseAddressWithoutPunctuation();
+	CanParseGridStyleAddress();
+	CanParseAddressWithAlphanumericRange();
+	CanParseAddressWithSpacedAlphanumericRange();
+	CanParseQueensStyleAddress();
+	CanParseAddressWithCardinalStreetName();
+	CanParseAddressWithRangedUnitAttachedToNumber();
+	CanParseFractionalAddress();
+	debug writeln("");
+}
+
+private string functionBaseName(string func = __FUNCTION__)
+{
+	import std.algorithm.iteration : splitter;
+	return func.splitter('.').back;
+}
+
+public void RegexAndResultTerminologyAgree()
 {
 	import std.algorithm.searching : canFind, startsWith;
 	import std.algorithm.iteration : splitter;
 	import std.format;
+
+	debug writef("  %s... ", functionBaseName);
 
 	// Ensure that the regular expression and the AddressParseResult class are
 	// using the same terminology.
@@ -70,27 +100,13 @@ unittest
 				name, *match, count));
 		namedCapturesAA[name] = count;
 	}
-}
 
-unittest
-{
-	CanParseTypicalAddressWithoutPunctuationAfterStreetLine();
-	CanParseTypicalAddressWithPunctuation();
-	CanParseAddressWithRangelessSecondaryUnit();
-	CanParsePostOfficeBoxAddress();
-	CanParseMilitaryAddress();
-	CanParseAddressWithoutPunctuation();
-	CanParseGridStyleAddress();
-	CanParseAddressWithAlphanumericRange();
-	CanParseAddressWithSpacedAlphanumericRange();
-	CanParseQueensStyleAddress();
-	CanParseAddressWithCardinalStreetName();
-	CanParseAddressWithRangedUnitAttachedToNumber();
-	CanParseFractionalAddress();
+	debug writeln("pass.");
 }
 
 public void CanParseTypicalAddressWithoutPunctuationAfterStreetLine()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("1005 N Gravenstein Highway Sebastopol, CA 95472");
 
 	assert(address.City == "SEBASTOPOL");
@@ -104,10 +120,12 @@ public void CanParseTypicalAddressWithoutPunctuationAfterStreetLine()
 	assert(address.StreetLine == "1005 N GRAVENSTEIN HWY");
 	assert(address.Suffix == "HWY");
 	assert(address.Zip == "95472");
+	debug writeln("pass.");
 }
 
 public void CanParseTypicalAddressWithPunctuation()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("1005 N Gravenstein Highway, Sebastopol, CA 95472");
 
 	assert(address.City == "SEBASTOPOL");
@@ -121,10 +139,12 @@ public void CanParseTypicalAddressWithPunctuation()
 	assert(address.StreetLine == "1005 N GRAVENSTEIN HWY");
 	assert(address.Suffix == "HWY");
 	assert(address.Zip == "95472");
+	debug writeln("pass.");
 }
 
 public void CanParseAddressWithRangelessSecondaryUnit()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("1050 Broadway Penthouse, New York, NY 10001");
 
 	assert(address.City == "NEW YORK");
@@ -138,10 +158,12 @@ public void CanParseAddressWithRangelessSecondaryUnit()
 	assert(address.StreetLine == "1050 BROADWAY PH");
 	assert(address.Suffix is null);
 	assert(address.Zip == "10001");
+	debug writeln("pass.");
 }
 
 public void CanParsePostOfficeBoxAddress()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("P.O. BOX 4857, New York, NY 10001");
 
 	assert(address.City == "NEW YORK");
@@ -155,6 +177,7 @@ public void CanParsePostOfficeBoxAddress()
 	assert(address.StreetLine == "PO BOX 4857");
 	assert(address.Suffix is null);
 	assert(address.Zip == "10001");
+	debug writeln("pass.");
 }
 
 /// <summary>
@@ -166,6 +189,7 @@ public void CanParsePostOfficeBoxAddress()
 /// </summary>
 public void CanParseMilitaryAddress()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("PSC BOX 453, APO AE 99969");
 
 	assert(address.City == "APO");
@@ -179,10 +203,12 @@ public void CanParseMilitaryAddress()
 	assert(address.StreetLine == "PSC BOX 453");
 	assert(address.Suffix is null);
 	assert(address.Zip == "99969");
+	debug writeln("pass.");
 }
 
 public void CanParseAddressWithoutPunctuation()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("999 West 89th Street Apt A New York NY 10024");
 
 	assert(address.City == "NEW YORK");
@@ -196,6 +222,7 @@ public void CanParseAddressWithoutPunctuation()
 	assert(address.StreetLine == "999 W 89TH ST APT A");
 	assert(address.Suffix == "ST");
 	assert(address.Zip == "10024");
+	debug writeln("pass.");
 }
 
 /// <summary>
@@ -205,6 +232,7 @@ public void CanParseAddressWithoutPunctuation()
 /// </summary>
 public void CanParseGridStyleAddress()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("842 E 1700 S, Salt Lake City, UT 84105");
 
 	assert(address.City == "SALT LAKE CITY");
@@ -218,6 +246,7 @@ public void CanParseGridStyleAddress()
 	assert(address.StreetLine == "842 E 1700 S");
 	assert(address.Suffix is null);
 	assert(address.Zip == "84105");
+	debug writeln("pass.");
 }
 
 /// <summary>
@@ -227,6 +256,7 @@ public void CanParseGridStyleAddress()
 /// </summary>
 public void CanParseAddressWithAlphanumericRange()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("N6W23001 BLUEMOUND ROAD, ROLLING MEADOWS, IL, 12345");
 
 	assert(address.City == "ROLLING MEADOWS");
@@ -240,6 +270,7 @@ public void CanParseAddressWithAlphanumericRange()
 	assert(address.StreetLine == "N6W23001 BLUEMOUND RD");
 	assert(address.Suffix == "RD");
 	assert(address.Zip == "12345");
+	debug writeln("pass.");
 }
 
 /// <summary>
@@ -248,6 +279,7 @@ public void CanParseAddressWithAlphanumericRange()
 /// </summary>
 public void CanParseAddressWithSpacedAlphanumericRange()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("N645 W23001 BLUEMOUND ROAD, ROLLING MEADOWS, IL, 12345");
 
 	assert(address.City == "ROLLING MEADOWS");
@@ -261,6 +293,7 @@ public void CanParseAddressWithSpacedAlphanumericRange()
 	assert(address.StreetLine == "N645W23001 BLUEMOUND RD");
 	assert(address.Suffix == "RD");
 	assert(address.Zip == "12345");
+	debug writeln("pass.");
 }
 
 /// <summary>
@@ -272,6 +305,7 @@ public void CanParseAddressWithSpacedAlphanumericRange()
 /// </summary>
 public void CanParseQueensStyleAddress()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("123-465 34th St New York NY 12345");
 
 	assert(address.City == "NEW YORK");
@@ -285,6 +319,7 @@ public void CanParseQueensStyleAddress()
 	assert(address.StreetLine == "123-465 34TH ST");
 	assert(address.Suffix == "ST");
 	assert(address.Zip == "12345");
+	debug writeln("pass.");
 }
 
 /// <summary>
@@ -294,6 +329,7 @@ public void CanParseQueensStyleAddress()
 /// </summary>
 public void CanParseAddressWithCardinalStreetName()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("500 SOUTH STREET VIRGINIA BEACH VIRGINIA 23452");
 
 	assert(address.City == "VIRGINIA BEACH");
@@ -307,6 +343,7 @@ public void CanParseAddressWithCardinalStreetName()
 	assert(address.StreetLine == "500 SOUTH ST");
 	assert(address.Suffix == "ST");
 	assert(address.Zip == "23452");
+	debug writeln("pass.");
 }
 
 /// <summary>
@@ -318,6 +355,7 @@ public void CanParseAddressWithCardinalStreetName()
 /// </summary>
 public void CanParseAddressWithRangedUnitAttachedToNumber()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("403D BERRYFIELD LANE CHESAPEAKE VA 23224");
 
 	assert(address.City == "CHESAPEAKE");
@@ -331,6 +369,7 @@ public void CanParseAddressWithRangedUnitAttachedToNumber()
 	assert(address.StreetLine == "403 BERRYFIELD LN APT D");
 	assert(address.Suffix == "LN");
 	assert(address.Zip == "23224");
+	debug writeln("pass.");
 }
 
 /// <summary>
@@ -338,6 +377,7 @@ public void CanParseAddressWithRangedUnitAttachedToNumber()
 /// </summary>
 public void CanParseFractionalAddress()
 {
+	debug writef("  %s... ", functionBaseName);
 	auto address = ParseAddress("123 1/2 MAIN ST, RICHMOND, VA 23221");
 
 	assert(address.City == "RICHMOND");
@@ -351,4 +391,5 @@ public void CanParseFractionalAddress()
 	assert(address.StreetLine == "123 1/2 MAIN ST");
 	assert(address.Suffix == "ST");
 	assert(address.Zip == "23221");
+	debug writeln("pass.");
 }
