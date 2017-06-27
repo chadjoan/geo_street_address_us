@@ -85,7 +85,7 @@ static this()
 	allSecondaryUnitsAA        = twoColumnArrayToAA(allSecondaryUnitsArray);
 
 	// Build the giant regex
-	InitializeRegex();
+	initializeRegex();
 }
 
 /// <summary>
@@ -93,7 +93,7 @@ static this()
 /// </summary>
 /// <param name="input">The input string.</param>
 /// <returns>The parsed address, or null if the address could not be parsed.</returns>
-public AddressParseResult ParseAddress(string input)
+public AddressParseResult parseAddress(string input)
 {
 	import std.exception : enforce;
 	import std.regex;
@@ -114,8 +114,8 @@ public AddressParseResult ParseAddress(string input)
 		
 	//printNamedCapturesByIndex(addressRegex, captures);
 
-	auto extracted = GetApplicableFields(captures);
-	return new AddressParseResult(Normalize(extracted));
+	auto extracted = getApplicableFields(captures);
+	return new AddressParseResult(normalize(extracted));
 }
 
 /// <summary>
@@ -125,7 +125,7 @@ public AddressParseResult ParseAddress(string input)
 /// <param name="match">The successful <see cref="Match"/> instance.</param>
 /// <returns>A dictionary in which the keys are the name of the fields and the values
 /// are pulled from the input address.</returns>
-private static string[string] GetApplicableFields(RegexCaptures)(RegexCaptures captures)
+private static string[string] getApplicableFields(RegexCaptures)(RegexCaptures captures)
 	if ( isInstanceOf!(std.regex.Captures, RegexCaptures) )
 {
 	import std.algorithm.searching : canFind;
@@ -158,7 +158,7 @@ private static string[string] GetApplicableFields(RegexCaptures)(RegexCaptures c
 /// <param name="input">The value to test against the regular expressions.</param>
 /// <returns>The correct USPS abbreviation, or the original value if no regular expression
 /// matched successfully.</returns>
-private static string GetNormalizedValueByRegexLookup
+private static string getNormalizedValueByRegexLookup
 	(string[2][] table) (string  input)
 {
 	import std.array : array;
@@ -195,7 +195,7 @@ private static string GetNormalizedValueByRegexLookup
 /// <param name="input">The value to search for in the list of strings.</param>
 /// <returns>The correct USPS abbreviation, or the original value if no string
 /// matched successfully.</returns>
-pure private static string GetNormalizedValueByStaticLookup(
+pure private static string getNormalizedValueByStaticLookup(
 	const string[string]  map,
 	string                value)
 {
@@ -214,7 +214,7 @@ pure private static string GetNormalizedValueByStaticLookup(
 /// <param name="field">The type of the field.</param>
 /// <param name="input">The value of the field.</param>
 /// <returns>The normalized value.</returns>
-private static string GetNormalizedValueForField( string field, string input )
+private static string getNormalizedValueForField( string field, string input )
 {
 	import std.algorithm;
 	import std.array;
@@ -225,16 +225,16 @@ private static string GetNormalizedValueForField( string field, string input )
 	{
 		case "Predirectional":
 		case "Postdirectional":
-			output = GetNormalizedValueByStaticLookup(directionalsAA, input);
+			output = getNormalizedValueByStaticLookup(directionalsAA, input);
 			break;
 		case "Suffix":
-			output = GetNormalizedValueByStaticLookup(suffixesAA, input);
+			output = getNormalizedValueByStaticLookup(suffixesAA, input);
 			break;
 		case "SecondaryUnit":
-			output = GetNormalizedValueByRegexLookup!allSecondaryUnitsArray(input);
+			output = getNormalizedValueByRegexLookup!allSecondaryUnitsArray(input);
 			break;
 		case "State":
-			output = GetNormalizedValueByStaticLookup(statesAA, input);
+			output = getNormalizedValueByStaticLookup(statesAA, input);
 			break;
 		case "Number":
 			if (!input.canFind('/'))
@@ -254,7 +254,7 @@ private static string GetNormalizedValueForField( string field, string input )
 /// Builds the gigantic regular expression stored in the addressRegex static
 /// member that actually does the parsing.
 /// </summary>
-private static void InitializeRegex()
+private static void initializeRegex()
 {
 	import std.algorithm.iteration : map, uniq;
 	import std.array : join;
@@ -425,7 +425,7 @@ private static void InitializeRegex()
 /// </summary>
 /// <param name="extracted">The dictionary of extracted fields.</param>
 /// <returns>A dictionary of the extracted fields with normalized values.</returns>
-private static string[string] Normalize(const string[string] extracted)
+private static string[string] normalize(const string[string] extracted)
 {
 	import std.range;
 	import std.regex;
@@ -445,7 +445,7 @@ private static string[string] Normalize(const string[string] extracted)
 			"");
 
 		// Normalize to official abbreviations where appropriate
-		value = GetNormalizedValueForField(key, value);
+		value = getNormalizedValueForField(key, value);
 
 		normalized[key] = value;
 	}

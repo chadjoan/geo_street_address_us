@@ -24,7 +24,7 @@ void main(string[] args)
 		writeln("Type an address and press <ENTER>:");
 		auto input = readln();
 
-		auto result = ParseAddress(input);
+		auto result = parseAddress(input);
 		if (result is null)
 		{
 			writeln("ERROR. Input could not be parsed.");
