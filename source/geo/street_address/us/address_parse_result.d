@@ -151,38 +151,38 @@ public class AddressParseResult
 	/// <summary>
 	/// Gets the city name.
 	/// </summary>
-	public  @property string City() const { return pCity; }
-	private @Lookup("City") string pCity;
+	public  @property string city() const { return pCity; }
+	private @Lookup("city") string pCity;
 
 	/// <summary>
 	/// Gets the house number.
 	/// </summary>
-	public  @property string Number() const { return pNumber; }
-	private @Lookup("Number") string pNumber;
+	public  @property string number() const { return pNumber; }
+	private @Lookup("number") string pNumber;
 
 	/// <summary>
 	/// Gets the predirectional, such as "N" in "500 N Main St".
 	/// </summary>
-	public  @property string Predirectional() const { return pPredirectional; }
-	private @Lookup("Predirectional") string pPredirectional;
+	public  @property string predirectional() const { return pPredirectional; }
+	private @Lookup("predirectional") string pPredirectional;
 
 	/// <summary>
 	/// Gets the postdirectional, such as "NW" in "500 Main St NW".
 	/// </summary>
-	public  @property string Postdirectional() const { return pPostdirectional; }
-	private @Lookup("Postdirectional") string pPostdirectional;
+	public  @property string postdirectional() const { return pPostdirectional; }
+	private @Lookup("postdirectional") string pPostdirectional;
 
 	/// <summary>
 	/// Gets the state or territory.
 	/// </summary>
-	public  @property string State() const { return pState; }
-	private @Lookup("State") string pState;
+	public  @property string state() const { return pState; }
+	private @Lookup("state") string pState;
 
 	/// <summary>
 	/// Gets the name of the street, such as "Main" in "500 N Main St".
 	/// </summary>
-	public  @property string Street() const { return pStreet; }
-	private @Lookup("Street") string pStreet;
+	public  @property string street() const { return pStreet; }
+	private @Lookup("street") string pStreet;
 
 	/// <summary>
 	/// Gets the full street line, such as "500 N Main St" in "500 N Main St".
@@ -190,7 +190,7 @@ public class AddressParseResult
 	/// However, in some special circumstances, most notably APO/FPO/DPO addresses, the
 	/// street line is set directly and the other elements will be null.
 	/// </summary>
-	public  @property string StreetLine()
+	public  @property string streetLine()
 	{
 		import std.array;
 		import std.regex;
@@ -198,13 +198,13 @@ public class AddressParseResult
 		if (this.pStreetLine is null)
 		{
 			auto tmpStreetLine = std.array.join([
-					this.Number,
-					this.Predirectional,
-					this.Street,
-					this.Suffix,
-					this.Postdirectional,
-					this.SecondaryUnit,
-					this.SecondaryNumber
+					this.number,
+					this.predirectional,
+					this.street,
+					this.suffix,
+					this.postdirectional,
+					this.secondaryUnit,
+					this.secondaryNumber
 				],  " ");
 			this.pStreetLine =
 				replaceAll(
@@ -218,31 +218,31 @@ public class AddressParseResult
 		return this.pStreetLine;
 	}
 	
-	private @Lookup("StreetLine") string pStreetLine;
+	private @Lookup("streetLine") string pStreetLine;
 
 	/// <summary>
 	/// Gets the street suffix, such as "ST" in "500 N MAIN ST".
 	/// </summary>
-	public  @property string Suffix() const { return pSuffix; }
-	private @Lookup("Suffix") string pSuffix;
+	public  @property string suffix() const { return pSuffix; }
+	private @Lookup("suffix") string pSuffix;
 
 	/// <summary>
 	/// Gets the secondary unit, such as "APT" in "500 N MAIN ST APT 3".
 	/// </summary>
-	public  @property string SecondaryUnit() const { return pSecondaryUnit; }
-	private @Lookup("SecondaryUnit") string pSecondaryUnit;
+	public  @property string secondaryUnit() const { return pSecondaryUnit; }
+	private @Lookup("secondaryUnit") string pSecondaryUnit;
 
 	/// <summary>
 	/// Gets the secondary unit, such as "3" in "500 N MAIN ST APT 3".
 	/// </summary>
-	public  @property string SecondaryNumber() const { return pSecondaryNumber; }
-	private @Lookup("SecondaryNumber") string pSecondaryNumber;
+	public  @property string secondaryNumber() const { return pSecondaryNumber; }
+	private @Lookup("secondaryNumber") string pSecondaryNumber;
 
 	/// <summary>
 	/// Gets the ZIP code.
 	/// </summary>
-	public  @property string Zip() const { return pZip; }
-	private @Lookup("Zip") string pZip;
+	public  @property string zip() const { return pZip; }
+	private @Lookup("zip") string pZip;
 
 	/// <summary>
 	/// Returns a string that represents this instance.
@@ -255,9 +255,9 @@ public class AddressParseResult
 		import std.format;
 		return format(
 			"%s; %s, %s  %s",
-			this.StreetLine,
-			this.City,
-			this.State,
-			this.Zip);
+			this.streetLine,
+			this.city,
+			this.state,
+			this.zip);
 	}
 }

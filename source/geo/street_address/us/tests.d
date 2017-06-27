@@ -109,17 +109,17 @@ public void CanParseTypicalAddressWithoutPunctuationAfterStreetLine()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("1005 N Gravenstein Highway Sebastopol, CA 95472");
 
-	assert(address.City == "SEBASTOPOL");
-	assert(address.Number == "1005");
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional == "N");
-	assert(address.SecondaryNumber is null);
-	assert(address.SecondaryUnit is null);
-	assert(address.State == "CA");
-	assert(address.Street == "GRAVENSTEIN");
-	assert(address.StreetLine == "1005 N GRAVENSTEIN HWY");
-	assert(address.Suffix == "HWY");
-	assert(address.Zip == "95472");
+	assert(address.city == "SEBASTOPOL");
+	assert(address.number == "1005");
+	assert(address.postdirectional is null);
+	assert(address.predirectional == "N");
+	assert(address.secondaryNumber is null);
+	assert(address.secondaryUnit is null);
+	assert(address.state == "CA");
+	assert(address.street == "GRAVENSTEIN");
+	assert(address.streetLine == "1005 N GRAVENSTEIN HWY");
+	assert(address.suffix == "HWY");
+	assert(address.zip == "95472");
 	debug writeln("pass.");
 }
 
@@ -128,17 +128,17 @@ public void CanParseTypicalAddressWithPunctuation()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("1005 N Gravenstein Highway, Sebastopol, CA 95472");
 
-	assert(address.City == "SEBASTOPOL");
-	assert(address.Number == "1005");
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional == "N");
-	assert(address.SecondaryNumber is null);
-	assert(address.SecondaryUnit is null);
-	assert(address.State == "CA");
-	assert(address.Street == "GRAVENSTEIN");
-	assert(address.StreetLine == "1005 N GRAVENSTEIN HWY");
-	assert(address.Suffix == "HWY");
-	assert(address.Zip == "95472");
+	assert(address.city == "SEBASTOPOL");
+	assert(address.number == "1005");
+	assert(address.postdirectional is null);
+	assert(address.predirectional == "N");
+	assert(address.secondaryNumber is null);
+	assert(address.secondaryUnit is null);
+	assert(address.state == "CA");
+	assert(address.street == "GRAVENSTEIN");
+	assert(address.streetLine == "1005 N GRAVENSTEIN HWY");
+	assert(address.suffix == "HWY");
+	assert(address.zip == "95472");
 	debug writeln("pass.");
 }
 
@@ -147,17 +147,17 @@ public void CanParseAddressWithRangelessSecondaryUnit()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("1050 Broadway Penthouse, New York, NY 10001");
 
-	assert(address.City == "NEW YORK");
-	assert(address.Number == "1050");
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional is null);
-	assert(address.SecondaryNumber is null);
-	assert(address.SecondaryUnit == "PH");
-	assert(address.State == "NY");
-	assert(address.Street == "BROADWAY");
-	assert(address.StreetLine == "1050 BROADWAY PH");
-	assert(address.Suffix is null);
-	assert(address.Zip == "10001");
+	assert(address.city == "NEW YORK");
+	assert(address.number == "1050");
+	assert(address.postdirectional is null);
+	assert(address.predirectional is null);
+	assert(address.secondaryNumber is null);
+	assert(address.secondaryUnit == "PH");
+	assert(address.state == "NY");
+	assert(address.street == "BROADWAY");
+	assert(address.streetLine == "1050 BROADWAY PH");
+	assert(address.suffix is null);
+	assert(address.zip == "10001");
 	debug writeln("pass.");
 }
 
@@ -166,17 +166,17 @@ public void CanParsePostOfficeBoxAddress()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("P.O. BOX 4857, New York, NY 10001");
 
-	assert(address.City == "NEW YORK");
-	assert(address.Number is null);
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional is null);
-	assert(address.SecondaryNumber is null);
-	assert(address.SecondaryUnit is null);
-	assert(address.State == "NY");
-	assert(address.Street is null);
-	assert(address.StreetLine == "PO BOX 4857");
-	assert(address.Suffix is null);
-	assert(address.Zip == "10001");
+	assert(address.city == "NEW YORK");
+	assert(address.number is null);
+	assert(address.postdirectional is null);
+	assert(address.predirectional is null);
+	assert(address.secondaryNumber is null);
+	assert(address.secondaryUnit is null);
+	assert(address.state == "NY");
+	assert(address.street is null);
+	assert(address.streetLine == "PO BOX 4857");
+	assert(address.suffix is null);
+	assert(address.zip == "10001");
 	debug writeln("pass.");
 }
 
@@ -192,17 +192,17 @@ public void CanParseMilitaryAddress()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("PSC BOX 453, APO AE 99969");
 
-	assert(address.City == "APO");
-	assert(address.Number is null);
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional is null);
-	assert(address.SecondaryNumber is null);
-	assert(address.SecondaryUnit is null);
-	assert(address.State == "AE");
-	assert(address.Street is null);
-	assert(address.StreetLine == "PSC BOX 453");
-	assert(address.Suffix is null);
-	assert(address.Zip == "99969");
+	assert(address.city == "APO");
+	assert(address.number is null);
+	assert(address.postdirectional is null);
+	assert(address.predirectional is null);
+	assert(address.secondaryNumber is null);
+	assert(address.secondaryUnit is null);
+	assert(address.state == "AE");
+	assert(address.street is null);
+	assert(address.streetLine == "PSC BOX 453");
+	assert(address.suffix is null);
+	assert(address.zip == "99969");
 	debug writeln("pass.");
 }
 
@@ -211,17 +211,17 @@ public void CanParseAddressWithoutPunctuation()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("999 West 89th Street Apt A New York NY 10024");
 
-	assert(address.City == "NEW YORK");
-	assert(address.Number == "999");
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional == "W");
-	assert(address.SecondaryNumber == "A");
-	assert(address.SecondaryUnit == "APT");
-	assert(address.State == "NY");
-	assert(address.Street == "89TH");
-	assert(address.StreetLine == "999 W 89TH ST APT A");
-	assert(address.Suffix == "ST");
-	assert(address.Zip == "10024");
+	assert(address.city == "NEW YORK");
+	assert(address.number == "999");
+	assert(address.postdirectional is null);
+	assert(address.predirectional == "W");
+	assert(address.secondaryNumber == "A");
+	assert(address.secondaryUnit == "APT");
+	assert(address.state == "NY");
+	assert(address.street == "89TH");
+	assert(address.streetLine == "999 W 89TH ST APT A");
+	assert(address.suffix == "ST");
+	assert(address.zip == "10024");
 	debug writeln("pass.");
 }
 
@@ -235,17 +235,17 @@ public void CanParseGridStyleAddress()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("842 E 1700 S, Salt Lake City, UT 84105");
 
-	assert(address.City == "SALT LAKE CITY");
-	assert(address.Number == "842");
-	assert(address.Postdirectional == "S");
-	assert(address.Predirectional == "E");
-	assert(address.SecondaryNumber is null);
-	assert(address.SecondaryUnit is null);
-	assert(address.State == "UT");
-	assert(address.Street == "1700");
-	assert(address.StreetLine == "842 E 1700 S");
-	assert(address.Suffix is null);
-	assert(address.Zip == "84105");
+	assert(address.city == "SALT LAKE CITY");
+	assert(address.number == "842");
+	assert(address.postdirectional == "S");
+	assert(address.predirectional == "E");
+	assert(address.secondaryNumber is null);
+	assert(address.secondaryUnit is null);
+	assert(address.state == "UT");
+	assert(address.street == "1700");
+	assert(address.streetLine == "842 E 1700 S");
+	assert(address.suffix is null);
+	assert(address.zip == "84105");
 	debug writeln("pass.");
 }
 
@@ -259,17 +259,17 @@ public void CanParseAddressWithAlphanumericRange()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("N6W23001 BLUEMOUND ROAD, ROLLING MEADOWS, IL, 12345");
 
-	assert(address.City == "ROLLING MEADOWS");
-	assert(address.Number == "N6W23001");
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional is null);
-	assert(address.SecondaryNumber is null);
-	assert(address.SecondaryUnit is null);
-	assert(address.State == "IL");
-	assert(address.Street == "BLUEMOUND");
-	assert(address.StreetLine == "N6W23001 BLUEMOUND RD");
-	assert(address.Suffix == "RD");
-	assert(address.Zip == "12345");
+	assert(address.city == "ROLLING MEADOWS");
+	assert(address.number == "N6W23001");
+	assert(address.postdirectional is null);
+	assert(address.predirectional is null);
+	assert(address.secondaryNumber is null);
+	assert(address.secondaryUnit is null);
+	assert(address.state == "IL");
+	assert(address.street == "BLUEMOUND");
+	assert(address.streetLine == "N6W23001 BLUEMOUND RD");
+	assert(address.suffix == "RD");
+	assert(address.zip == "12345");
 	debug writeln("pass.");
 }
 
@@ -282,17 +282,17 @@ public void CanParseAddressWithSpacedAlphanumericRange()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("N645 W23001 BLUEMOUND ROAD, ROLLING MEADOWS, IL, 12345");
 
-	assert(address.City == "ROLLING MEADOWS");
-	assert(address.Number == "N645W23001");
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional is null);
-	assert(address.SecondaryNumber is null);
-	assert(address.SecondaryUnit is null);
-	assert(address.State == "IL");
-	assert(address.Street == "BLUEMOUND");
-	assert(address.StreetLine == "N645W23001 BLUEMOUND RD");
-	assert(address.Suffix == "RD");
-	assert(address.Zip == "12345");
+	assert(address.city == "ROLLING MEADOWS");
+	assert(address.number == "N645W23001");
+	assert(address.postdirectional is null);
+	assert(address.predirectional is null);
+	assert(address.secondaryNumber is null);
+	assert(address.secondaryUnit is null);
+	assert(address.state == "IL");
+	assert(address.street == "BLUEMOUND");
+	assert(address.streetLine == "N645W23001 BLUEMOUND RD");
+	assert(address.suffix == "RD");
+	assert(address.zip == "12345");
 	debug writeln("pass.");
 }
 
@@ -308,17 +308,17 @@ public void CanParseQueensStyleAddress()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("123-465 34th St New York NY 12345");
 
-	assert(address.City == "NEW YORK");
-	assert(address.Number == "123-465");
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional is null);
-	assert(address.SecondaryNumber is null);
-	assert(address.SecondaryUnit is null);
-	assert(address.State == "NY");
-	assert(address.Street == "34TH");
-	assert(address.StreetLine == "123-465 34TH ST");
-	assert(address.Suffix == "ST");
-	assert(address.Zip == "12345");
+	assert(address.city == "NEW YORK");
+	assert(address.number == "123-465");
+	assert(address.postdirectional is null);
+	assert(address.predirectional is null);
+	assert(address.secondaryNumber is null);
+	assert(address.secondaryUnit is null);
+	assert(address.state == "NY");
+	assert(address.street == "34TH");
+	assert(address.streetLine == "123-465 34TH ST");
+	assert(address.suffix == "ST");
+	assert(address.zip == "12345");
 	debug writeln("pass.");
 }
 
@@ -332,17 +332,17 @@ public void CanParseAddressWithCardinalStreetName()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("500 SOUTH STREET VIRGINIA BEACH VIRGINIA 23452");
 
-	assert(address.City == "VIRGINIA BEACH");
-	assert(address.Number == "500");
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional is null);
-	assert(address.SecondaryNumber is null);
-	assert(address.SecondaryUnit is null);
-	assert(address.State == "VA");
-	assert(address.Street == "SOUTH");
-	assert(address.StreetLine == "500 SOUTH ST");
-	assert(address.Suffix == "ST");
-	assert(address.Zip == "23452");
+	assert(address.city == "VIRGINIA BEACH");
+	assert(address.number == "500");
+	assert(address.postdirectional is null);
+	assert(address.predirectional is null);
+	assert(address.secondaryNumber is null);
+	assert(address.secondaryUnit is null);
+	assert(address.state == "VA");
+	assert(address.street == "SOUTH");
+	assert(address.streetLine == "500 SOUTH ST");
+	assert(address.suffix == "ST");
+	assert(address.zip == "23452");
 	debug writeln("pass.");
 }
 
@@ -358,17 +358,17 @@ public void CanParseAddressWithRangedUnitAttachedToNumber()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("403D BERRYFIELD LANE CHESAPEAKE VA 23224");
 
-	assert(address.City == "CHESAPEAKE");
-	assert(address.Number == "403");
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional is null);
-	assert(address.SecondaryNumber == "D");
-	assert(address.SecondaryUnit == "APT");
-	assert(address.State == "VA");
-	assert(address.Street == "BERRYFIELD");
-	assert(address.StreetLine == "403 BERRYFIELD LN APT D");
-	assert(address.Suffix == "LN");
-	assert(address.Zip == "23224");
+	assert(address.city == "CHESAPEAKE");
+	assert(address.number == "403");
+	assert(address.postdirectional is null);
+	assert(address.predirectional is null);
+	assert(address.secondaryNumber == "D");
+	assert(address.secondaryUnit == "APT");
+	assert(address.state == "VA");
+	assert(address.street == "BERRYFIELD");
+	assert(address.streetLine == "403 BERRYFIELD LN APT D");
+	assert(address.suffix == "LN");
+	assert(address.zip == "23224");
 	debug writeln("pass.");
 }
 
@@ -380,16 +380,16 @@ public void CanParseFractionalAddress()
 	debug writef("  %s... ", functionBaseName);
 	auto address = parseAddress("123 1/2 MAIN ST, RICHMOND, VA 23221");
 
-	assert(address.City == "RICHMOND");
-	assert(address.Number == "123 1/2");
-	assert(address.Postdirectional is null);
-	assert(address.Predirectional is null);
-	assert(address.SecondaryNumber is null);
-	assert(address.SecondaryUnit is null);
-	assert(address.State == "VA");
-	assert(address.Street == "MAIN");
-	assert(address.StreetLine == "123 1/2 MAIN ST");
-	assert(address.Suffix == "ST");
-	assert(address.Zip == "23221");
+	assert(address.city == "RICHMOND");
+	assert(address.number == "123 1/2");
+	assert(address.postdirectional is null);
+	assert(address.predirectional is null);
+	assert(address.secondaryNumber is null);
+	assert(address.secondaryUnit is null);
+	assert(address.state == "VA");
+	assert(address.street == "MAIN");
+	assert(address.streetLine == "123 1/2 MAIN ST");
+	assert(address.suffix == "ST");
+	assert(address.zip == "23221");
 	debug writeln("pass.");
 }

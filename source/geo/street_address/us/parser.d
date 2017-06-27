@@ -223,20 +223,20 @@ private static string getNormalizedValueForField( string field, string input )
 
 	switch (field)
 	{
-		case "Predirectional":
-		case "Postdirectional":
+		case "predirectional":
+		case "postdirectional":
 			output = getNormalizedValueByStaticLookup(directionalsAA, input);
 			break;
-		case "Suffix":
+		case "suffix":
 			output = getNormalizedValueByStaticLookup(suffixesAA, input);
 			break;
-		case "SecondaryUnit":
+		case "secondaryUnit":
 			output = getNormalizedValueByRegexLookup!allSecondaryUnitsArray(input);
 			break;
-		case "State":
+		case "state":
 			output = getNormalizedValueByStaticLookup(statesAA, input);
 			break;
-		case "Number":
+		case "number":
 			if (!input.canFind('/'))
 			{
 				output = input.replace(" ", "");
@@ -289,10 +289,10 @@ private static void initializeRegex()
 
 	enum numberPattern =
 		`(?P<_numberPattern>
-			((?P<Number_00>\d+)(?P<SecondaryNumber_00>(-[0-9])|(\-?[A-Z]))(?=\b))   (?# Unit-attached      )
-			|(?P<Number_01>\d+[\-\x20]?\d+\/\d+)                                    (?# Fractional         )
-			|(?P<Number_02>\d+\-?\d*)                                               (?# Normal Number      )
-			|(?P<Number_03>[NSWE]\x20?\d+\x20?[NSWE]\x20?\d+)                       (?# Wisconsin/Illinois )
+			((?P<number_00>\d+)(?P<secondaryNumber_00>(-[0-9])|(\-?[A-Z]))(?=\b))   (?# Unit-attached      )
+			|(?P<number_01>\d+[\-\x20]?\d+\/\d+)                                    (?# Fractional         )
+			|(?P<number_02>\d+\-?\d*)                                               (?# Normal Number      )
+			|(?P<number_03>[NSWE]\x20?\d+\x20?[NSWE]\x20?\d+)                       (?# Wisconsin/Illinois )
 		)`;
 
 	// This can't be executed at compile-time due to using directionalPattern.
@@ -302,28 +302,28 @@ private static void initializeRegex()
 				(?P<_streetPattern>
 					(?P<_streetPattern_0>
 						(?# special case for addresses like 100 South Street)
-						(?P<Street_00>%1$s)\W+
-						(?P<Suffix_00>%2$s)\b
+						(?P<street_00>%1$s)\W+
+						(?P<suffix_00>%2$s)\b
 					)
 					|
 					(?P<_streetPattern_1>
-						(?:(?P<Predirectional_00>%1$s)\W+)?
+						(?:(?P<predirectional_00>%1$s)\W+)?
 						(?P<_streetPattern_1_0>
 							(?P<_streetPattern_1_0_0>
-								(?P<Street_01>[^,]*\d)
-								(?:[^\w,]*(?P<Postdirectional_01>%1$s)\b)
+								(?P<street_01>[^,]*\d)
+								(?:[^\w,]*(?P<postdirectional_01>%1$s)\b)
 							)
 							|
 							(?P<_streetPattern_1_0_1>
-								(?P<Street_02>[^,]+)
-								(?:[^\w,]+(?P<Suffix_02>%2$s)\b)
-								(?:[^\w,]+(?P<Postdirectional_02>%1$s)\b)?
+								(?P<street_02>[^,]+)
+								(?:[^\w,]+(?P<suffix_02>%2$s)\b)
+								(?:[^\w,]+(?P<postdirectional_02>%1$s)\b)?
 							)
 							|
 							(?P<_streetPattern_1_0_2>
-								(?P<Street_03>[^,]+?)
-								(?:[^\w,]+(?P<Suffix_03>%2$s)\b)?
-								(?:[^\w,]+(?P<Postdirectional_03>%1$s)\b)?
+								(?P<street_03>[^,]+?)
+								(?:[^\w,]+(?P<suffix_03>%2$s)\b)?
+								(?:[^\w,]+(?P<postdirectional_03>%1$s)\b)?
 							)
 						)
 					)
@@ -333,12 +333,12 @@ private static void initializeRegex()
 			suffixPattern);
 
 	enum rangedSecondaryUnitPattern =
-		`(?P<SecondaryUnit_00>` ~
+		`(?P<secondaryUnit_00>` ~
 		rangedSecondaryUnitsArray.leftColumn.join("|") ~
 		`)(?![a-z])`;
 
 	enum rangelessSecondaryUnitPattern =
-		`(?P<SecondaryUnit_01>` ~
+		`(?P<secondaryUnit_01>` ~
 		rangelessSecondaryUnitsArray.leftColumn.join("|") ~
 		`)\b`;
 
@@ -347,9 +347,9 @@ private static void initializeRegex()
 			(?P<_allSecondaryUnitPattern>
 				(?:[:]?
 					(?: (?:%1$s \W*)
-						| (?P<SecondaryUnit_02>\#)\W*
+						| (?P<secondaryUnit_02>\#)\W*
 					)
-					(?P<SecondaryNumber_02>[\w-]+)
+					(?P<secondaryNumber_02>[\w-]+)
 				)
 				|%2$s
 			),?
@@ -360,8 +360,8 @@ private static void initializeRegex()
 	enum cityAndStatePattern = format(
 		`
 			(?P<_cityAndStatePattern_%%1$s>
-				(?P<City_%%1$s>[^\d,]+?)\W+
-				(?P<State_%%1$s>%1$s)
+				(?P<city_%%1$s>[^\d,]+?)\W+
+				(?P<state_%%1$s>%1$s)
 			)
 		`,
 		statePattern);
@@ -369,7 +369,7 @@ private static void initializeRegex()
 	enum placePattern = format(
 		`
 			(?:%1$s\W*)?
-			(?:(?P<Zip_%%1$s>%2$s))?
+			(?:(?P<zip_%%1$s>%2$s))?
 		`,
 		format(cityAndStatePattern,"%1$s"),
 		zipPattern);
@@ -382,17 +382,17 @@ private static void initializeRegex()
 				(?P<_addressPattern_0>
 					(?# Special case for APO/FPO/DPO addresses)
 					[^\w\#]*
-					(?P<StreetLine_00>.+?)
-					(?P<City_00>[AFD]PO)\W+
-					(?P<State_00>A[AEP])\W+
-					(?P<Zip_00>%6$s)
+					(?P<streetLine_00>.+?)
+					(?P<city_00>[AFD]PO)\W+
+					(?P<state_00>A[AEP])\W+
+					(?P<zip_00>%6$s)
 					\W*
 				)
 				|
 				(?P<_addressPattern_1>
 					(?# Special case for PO boxes)
 					\W*
-					(?P<StreetLine_01>(P[\.\x20]?O[\.\x20]?\x20)?BOX\x20[0-9]+)\W+
+					(?P<streetLine_01>(P[\.\x20]?O[\.\x20]?\x20)?BOX\x20[0-9]+)\W+
 					%5$s
 					\W*
 				)
@@ -451,11 +451,11 @@ private static string[string] normalize(const string[string] extracted)
 	}
 
 	// Special case for an attached unit
-	if ("SecondaryNumber" in extracted
-	&&   ("SecondaryUnit" !in extracted
-	||   std.string.strip(extracted["SecondaryUnit"]).empty ))
+	if ("secondaryNumber" in extracted
+	&&   ("secondaryUnit" !in extracted
+	||   std.string.strip(extracted["secondaryUnit"]).empty ))
 	{
-		normalized["SecondaryUnit"] = "APT";
+		normalized["secondaryUnit"] = "APT";
 	}
 
 	return normalized;
