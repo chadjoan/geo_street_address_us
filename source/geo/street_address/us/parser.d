@@ -71,11 +71,12 @@ immutable string[string] allSecondaryUnitsAA; /// ditto
 /// The gigantic regular expression that actually extracts the bits and pieces
 /// from a given address.
 /// </summary>
-package static Regex!char addressRegex;
+package Regex!char threadLocalAddressRegex;
 
 static this()
 {
 	import std.range;
+	import std.stdio;
 
 	directionalsAA             = twoColumnArrayToAA(directionalsArray);
 	statesAA                   = twoColumnArrayToAA(statesArray);
@@ -85,21 +86,20 @@ static this()
 	allSecondaryUnitsAA        = twoColumnArrayToAA(allSecondaryUnitsArray);
 
 	// Build the giant regex
-	initializeRegex();
+	threadLocalAddressRegex = buildAddressRegex();
 }
 
-/// <summary>
 /// Attempts to parse the given input as a US address.
-/// </summary>
+///
 /// <param name="input">The input string.</param>
-/// <returns>The parsed address, or null if the address could not be parsed.</returns>
+/// returns: The parsed address, or null if the address could not be parsed.
 public AddressParseResult parseAddress(string input)
 {
 	import std.exception : enforce;
 	import std.regex;
 	import std.string;
 	import std.uni;
-	
+
 	enforce(input !is null);
 
 	auto address = std.string.strip(input);
@@ -108,11 +108,11 @@ public AddressParseResult parseAddress(string input)
 	
 	address = std.uni.toUpper(address);
 
-	auto captures = std.regex.matchFirst(address, addressRegex);
+	auto captures = std.regex.matchFirst(address, threadLocalAddressRegex);
 	if (captures.empty)
 		return null;
-		
-	//printNamedCapturesByIndex(addressRegex, captures);
+
+	//printNamedCapturesByIndex(threadLocalAddressRegex, captures);
 
 	auto extracted = getApplicableFields(captures);
 	return new AddressParseResult(normalize(extracted));
@@ -125,7 +125,7 @@ public AddressParseResult parseAddress(string input)
 /// <param name="match">The successful <see cref="Match"/> instance.</param>
 /// <returns>A dictionary in which the keys are the name of the fields and the values
 /// are pulled from the input address.</returns>
-private static string[string] getApplicableFields(RegexCaptures)(RegexCaptures captures)
+private string[string] getApplicableFields(RegexCaptures)(RegexCaptures captures)
 	if ( isInstanceOf!(std.regex.Captures, RegexCaptures) )
 {
 	import std.algorithm.searching : canFind;
@@ -134,7 +134,7 @@ private static string[string] getApplicableFields(RegexCaptures)(RegexCaptures c
 	import std.regex;
 	string[string] applicable;
 
-	foreach (captureName; addressRegex.namedCaptures)
+	foreach (captureName; threadLocalAddressRegex.namedCaptures)
 	{
 		auto fieldName = captureName.splitter('_').front;
 		if ( !AddressParseResult.propertyNames.canFind(fieldName) )
@@ -170,7 +170,7 @@ private static string getNormalizedValueByRegexLookup
 	// parsers that are compiled at (program) compile-time.
 	enum patterns = table.leftColumn.array;
 	alias largeTupleOfRegexes = staticMap!(ctRegex, aliasSeqOf!patterns);
-	enum arrayOfRegexes = [largeTupleOfRegexes];
+	static auto arrayOfRegexes = [largeTupleOfRegexes];
 
 	// Iterate over the compiled regexes in lockstep with the
 	// table's right column.  The right column is used to provide
@@ -181,7 +181,7 @@ private static string getNormalizedValueByRegexLookup
 		if ( std.regex.matchFirst(input, regex) )
 			return replacement;
 	}
-	
+
 	return input;
 }
 
@@ -250,11 +250,9 @@ private static string getNormalizedValueForField( string field, string input )
 	return output;
 }
 
-/// <summary>
-/// Builds the gigantic regular expression stored in the addressRegex static
-/// member that actually does the parsing.
-/// </summary>
-private static void initializeRegex()
+/// Builds a gigantic regular expression that can be used to parse addresses.
+/// The result is intended to be fed into parseAddress(...).
+public auto buildAddressRegex()
 {
 	import std.algorithm.iteration : map, uniq;
 	import std.array : join;
@@ -415,17 +413,16 @@ private static void initializeRegex()
 		format(placePattern,"01"),
 		zipPattern);
 
-	addressRegex = regex( addressPattern, "sx" );
+	return regex( addressPattern, "sx" );
 }
 
-/// <summary>
 /// Given a set of fields pulled from a successful match, this normalizes each value
 /// by stripping off some punctuation and, if applicable, converting it to a standard
 /// USPS abbreviation.
-/// </summary>
+///
 /// <param name="extracted">The dictionary of extracted fields.</param>
-/// <returns>A dictionary of the extracted fields with normalized values.</returns>
-private static string[string] normalize(const string[string] extracted)
+/// returns: A dictionary of the extracted fields with normalized values.
+private string[string] normalize(const string[string] extracted)
 {
 	import std.range;
 	import std.regex;
@@ -439,9 +436,10 @@ private static string[string] normalize(const string[string] extracted)
 		string value = pair.value;
 
 		// Strip off some punctuation
+		static auto punctuationStripper = ctRegex!`^\s+|\s+$|[^\/\w\s\-\#\&]`;
 		value = std.regex.replaceAll(
 			value,
-			ctRegex!`^\s+|\s+$|[^\/\w\s\-\#\&]`,
+			punctuationStripper,
 			"");
 
 		// Normalize to official abbreviations where appropriate

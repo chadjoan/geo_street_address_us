@@ -51,7 +51,7 @@ public void RegexAndResultTerminologyAgree()
 	// fields.  While we're at it, populate this set that represents all of
 	// the named captures, so that we can look them up quickly in step 2.
 	bool[string] fieldNameSegmentsOfNamedCapturesAA;
-	foreach (name; addressRegex.namedCaptures)
+	foreach (name; threadLocalAddressRegex.namedCaptures)
 	{
 		if ( name.startsWith("_") )
 			continue; // Exclude underscore'd captures from this check.  These are useful for troubleshooting.
@@ -89,7 +89,7 @@ public void RegexAndResultTerminologyAgree()
 	// engine might not even capture them correctly).
 	size_t[string] namedCapturesAA;
 	size_t count = 0;
-	foreach (name; addressRegex.namedCaptures())
+	foreach (name; threadLocalAddressRegex.namedCaptures())
 	{
 		count++;
 		size_t* match = name in namedCapturesAA;
