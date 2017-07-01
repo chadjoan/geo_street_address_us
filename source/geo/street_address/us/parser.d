@@ -1,25 +1,19 @@
-﻿/// <summary>
-///     <para>
-///         This is an attempt at a D port of the C# port of the Perl CPAN module
-///         Geo::StreetAddress::US.  It's a regex-based street address and
-///         street intersection parser for the United States. 
-///     </para>
-///     <para>
-///         The original Perl version was written and is copyrighted by
-///         Schuyler D. Erle &lt;schuyler@geocoder.us&gt; and is accessible at
-///         <a href="http://search.cpan.org/~timb/Geo-StreetAddress-US-1.03/US.pm">CPAN</a>.
-///     </para>
-///     <para>
-///         It says that "this library is free software; you can redistribute it and/or modify 
-///         it under the same terms as Perl itself, either Perl version 5.8.4 or, at 
-///         your option, any later version of Perl 5 you may have available."
-///     </para>
-///     <para>
-///         According to the <a href="http://dev.perl.org/licenses/">Perl licensing page</a>,
-///         that seems to mean you have a choice between GPL V1 (or at your option, a later version)
-///         or the Artistic License.
-///     </para>
-/// </summary>
+﻿/// This is an attempt at a D port of the C# port of the Perl CPAN module
+/// Geo::StreetAddress::US.  It's a regex-based street address and
+/// street intersection parser for the United States. 
+///
+/// The original Perl version was written and is copyrighted by
+/// Schuyler D. Erle &lt;schuyler@geocoder.us&gt; and is accessible at
+/// <a href="http://search.cpan.org/~timb/Geo-StreetAddress-US-1.03/US.pm">CPAN</a>.
+///
+/// It says that "this library is free software; you can redistribute it and/or modify 
+/// it under the same terms as Perl itself, either Perl version 5.8.4 or, at 
+/// your option, any later version of Perl 5 you may have available."
+///
+/// According to the <a href="http://dev.perl.org/licenses/">Perl licensing page</a>,
+/// that seems to mean you have a choice between GPL V1 (or at your option, a later version)
+/// or the Artistic License.
+
 module geo.street_address.us.parser;
 
 public import geo.street_address.us.address_parse_result;
@@ -28,49 +22,37 @@ import geo.street_address.us.tests;
 import std.regex;
 import std.traits : isInstanceOf;
 
+private
+{
+	/// Maps directional names (north, northeast, etc.) to abbreviations (N, NE, etc.).
+	enum string[2][] directionalsArray = twoColumnCsvFileToArray!"directionals.csv";
+	immutable string[string] directionalsAA; /// ditto
 
-/// <summary>
-/// Maps directional names (north, northeast, etc.) to abbreviations (N, NE, etc.).
-/// </summary>
-enum string[2][] directionalsArray = twoColumnCsvFileToArray!"directionals.csv";
-immutable string[string] directionalsAA; /// ditto
+	/// Maps lowercased US state and territory names to their canonical two-letter
+	/// postal abbreviations.
+	enum string[2][] statesArray = twoColumnCsvFileToArray!"states.csv";
+	immutable string[string] statesAA; /// ditto
 
-/// <summary>
-/// Maps lowercased US state and territory names to their canonical two-letter
-/// postal abbreviations.
-/// </summary>
-enum string[2][] statesArray = twoColumnCsvFileToArray!"states.csv";
-immutable string[string] statesAA; /// ditto
+	/// Maps lowerecased USPS standard street suffixes to their canonical postal
+	/// abbreviations as found in TIGER/Line.
+	enum string[2][] suffixesArray = twoColumnCsvFileToArray!"suffixes.csv";
+	immutable string[string] suffixesAA; /// ditto
 
-/// <summary>
-/// Maps lowerecased USPS standard street suffixes to their canonical postal
-/// abbreviations as found in TIGER/Line.
-/// </summary>
-enum string[2][] suffixesArray = twoColumnCsvFileToArray!"suffixes.csv";
-immutable string[string] suffixesAA; /// ditto
+	/// Secondary units that require a number after them.
+	enum string[2][] rangedSecondaryUnitsArray = twoColumnCsvFileToArray!"ranged_secondary_units.csv";
+	immutable string[string] rangedSecondaryUnitsAA; /// ditto
 
-/// <summary>
-/// Secondary units that require a number after them.
-/// </summary>
-enum string[2][] rangedSecondaryUnitsArray = twoColumnCsvFileToArray!"ranged_secondary_units.csv";
-immutable string[string] rangedSecondaryUnitsAA; /// ditto
+	/// Secondary units that do not require a number after them.
+	enum string[2][] rangelessSecondaryUnitsArray = twoColumnCsvFileToArray!"rangeless_secondary_units.csv";
+	immutable string[string] rangelessSecondaryUnitsAA; /// ditto
 
-/// <summary>
-/// Secondary units that do not require a number after them.
-/// </summary>
-enum string[2][] rangelessSecondaryUnitsArray = twoColumnCsvFileToArray!"rangeless_secondary_units.csv";
-immutable string[string] rangelessSecondaryUnitsAA; /// ditto
+	/// A combined dictionary of the ranged and rangeless secondary units.
+	enum string[2][] allSecondaryUnitsArray = rangedSecondaryUnitsArray ~ rangelessSecondaryUnitsArray;
+	immutable string[string] allSecondaryUnitsAA; /// ditto
+}
 
-/// <summary>
-/// A combined dictionary of the ranged and rangeless secondary units.
-/// </summary>
-enum string[2][] allSecondaryUnitsArray = rangedSecondaryUnitsArray ~ rangelessSecondaryUnitsArray;
-immutable string[string] allSecondaryUnitsAA; /// ditto
-
-/// <summary>
 /// The gigantic regular expression that actually extracts the bits and pieces
 /// from a given address.
-/// </summary>
 package Regex!char threadLocalAddressRegex;
 
 static this()
@@ -91,61 +73,121 @@ static this()
 
 /// Attempts to parse the given input as a US address.
 ///
-/// <param name="input">The input string.</param>
-/// returns: The parsed address, or null if the address could not be parsed.
+/// Params:
+///      input = The input string.
+///
+/// Returns: The parsed address, or null if the address could not be parsed.
 public AddressParseResult parseAddress(string input)
+{
+	char[] dummy = null;
+	return parseAddress(input, new AddressParseResult, dummy);
+}
+
+/// Attempts to parse the given input as a US address.
+///
+/// Params:
+///      input = The input string.
+///      output = A pre-allocated but uninitialized parse result object.
+///      textBuf = Buffer used to store any normalizations to the address.
+///                This allows the caller to preallocate memory and possibly
+///                avoid unnecessary memory allocations.  This should be
+///                large enough to store the address twice.  The resulting
+///                contents are not necessarily a valid address: as a result
+///                of avoiding out-of-scope computations, this may end up
+///                being a concatenation of normalized address elements in an
+///                arbitrary order.  After this call, textBuf will be a slice
+///                of the remaining buffer space.
+///
+/// Returns: The parsed address, or null if the address could not be parsed.
+///
+public AddressParseResult parseAddress(string input, AddressParseResult output, ref char[] textBuf)
 {
 	import std.exception : enforce;
 	import std.regex;
 	import std.string;
 	import std.uni;
 
-	enforce(input !is null);
+	// Even if you prefer assertions of enforcement for this, the time
+	// required to parse the address is going to be many orders of magnitude
+	// greater than the cost of the enforce statements.
+	// And it helps A LOT when nulls propagate in the wild.
+	enforce(input  !is null);
+	enforce(output !is null);
 
+	//
 	auto address = std.string.strip(input);
-	if ( address.length == 0 )
+	auto len = address.length;
+	if ( len == 0 )
 		return null;
-	
-	address = std.uni.toUpper(address);
 
-	auto captures = std.regex.matchFirst(address, threadLocalAddressRegex);
+	// If the caller didn't provide a preallocated text buffer, or it isn't
+	// big enough, then we need to allocate one ourselves.
+	if ( textBuf is null || textBuf.length < len )
+		textBuf = new char[len*2];
+
+	// We're about to potentially mutate the string.
+	// Attempt to avoid allocations by using the preallocated buffer.
+	textBuf[0..len] = address;
+	auto addressEmplaced = textBuf[0..len];
+	textBuf = textBuf[len..$];
+
+	// Uppercase so that any normalization steps that follow will be simpler.
+	// This is also, itself, a normalization step.
+	std.uni.toUpperInPlace(addressEmplaced);
+
+	// Use the giant address regex.
+	// This is the most useful part, and probably the slowest part too.
+	auto captures = std.regex.matchFirst(addressEmplaced, threadLocalAddressRegex);
 	if (captures.empty)
 		return null;
 
 	//printNamedCapturesByIndex(threadLocalAddressRegex, captures);
 
-	auto extracted = getApplicableFields(captures);
-	return new AddressParseResult(normalize(extracted));
+	// Stack allocate an AddressElement array.
+	// This won't be passed back to the caller.  Instead, it is needed
+	// internally for mapping regex matches to fields in the result.
+	SoftAddressElement[AddressParseResult.propertyNames.length] addressElemsBuf;
+
+	// Populate the address elements buffer.
+	auto addressElems = getApplicableFields(captures, addressElemsBuf[]);
+
+	// Normalize and finish.
+	output.initialize(normalize(addressElems, addressElemsBuf[], textBuf));
+	return output;
 }
 
-/// <summary>
 /// Given a successful match, this method creates a dictionary 
 /// consisting of the fields that we actually care to extract from the address.
-/// </summary>
-/// <param name="match">The successful <see cref="Match"/> instance.</param>
-/// <returns>A dictionary in which the keys are the name of the fields and the values
-/// are pulled from the input address.</returns>
-private string[string] getApplicableFields(RegexCaptures)(RegexCaptures captures)
-	if ( isInstanceOf!(std.regex.Captures, RegexCaptures) )
+///
+/// Returns: A list of SoftAddressElement's, each of which contains a mapping
+///   between a field name and a field value.
+private SoftAddressElement[] getApplicableFields(RegexCaptures) (
+	RegexCaptures         captures,
+	SoftAddressElement[]  addressElems
+	)
+		if ( isInstanceOf!(std.regex.Captures, RegexCaptures) )
 {
-	import std.algorithm.searching : canFind;
 	import std.algorithm.iteration : splitter;
 	import std.range;
 	import std.regex;
-	string[string] applicable;
 
+	size_t i = 0;
 	foreach (captureName; threadLocalAddressRegex.namedCaptures)
 	{
 		auto fieldName = captureName.splitter('_').front;
-		if ( !AddressParseResult.propertyNames.canFind(fieldName) )
+		if ( fieldName !in AddressParseResult.propertyIndexesByGetterName )
 			continue;
 
 		auto matchSlice = captures[captureName];
 		if ( matchSlice !is null && !matchSlice.empty )
-			applicable[fieldName] = matchSlice;
+		{
+			addressElems[i].propertyName  = fieldName;
+			addressElems[i].propertyValue = matchSlice;
+			i++;
+		}
 	}
 
-	return applicable;
+	return addressElems[0..i];
 }
 
 /// <summary>
@@ -195,7 +237,7 @@ private static string getNormalizedValueByRegexLookup
 /// <param name="input">The value to search for in the list of strings.</param>
 /// <returns>The correct USPS abbreviation, or the original value if no string
 /// matched successfully.</returns>
-pure private static string getNormalizedValueByStaticLookup(
+private static string getNormalizedValueByStaticLookup(
 	const string[string]  map,
 	string                value)
 {
@@ -416,47 +458,206 @@ public auto buildAddressRegex()
 	return regex( addressPattern, "sx" );
 }
 
+/// Removes punctuation from 'src', outputting the result to 'dst' as it
+/// processes.
+///
+/// This function is designed to give correct results when 'src' and 'dst'
+/// point to the same slice.  In other words: it is an in-place algorithm
+/// with the optional capability of doing a copy operation in the same step.
+///
+/// The returned value's .ptr field will always equal 'dst''s .ptr field.
+/// (This can simplify some buffer management calculations for the caller.)
+///
+/// Returns: a slice of 'dst' populated with the result of processing 'src'.
+private char[] normalizeRemovePunctuation(char[] src, char[] dst)
+{
+	import std.algorithm.mutation : copy;
+	import std.string;
+	import std.uni : isAlphaNum, isWhite;
+	import std.utf : decode;
+
+	src = strip(src);
+
+	// Loop to remove punctuation.
+	// This implementation is a bit tedious, but it allows the operation
+	// to occur without any allocations and a minimum of copying.
+	//
+	// If char[] were an output range for dchar, then we would be able to
+	// use a regular expression here.  The original code had a regex like
+	// this one: `^\s+|\s+$|[^\/\w\s\-\#\&]`
+	// Even so, this code will probably execute faster than the regex,
+	// at least as of dmd v2.074.1 (even with ctRegex).
+	//
+	size_t count = 0;
+	size_t srcIndex = 0;
+	size_t dstIndex = 0;
+	while( srcIndex < src.length )
+	{
+		size_t prev = srcIndex;
+		auto ch = decode(src, srcIndex);
+		if ( !isAlphaNum(ch)
+		&&   !isWhite(ch)
+		&&   ch != '/' && ch != '-'
+		&&   ch != '#' && ch != '&')
+			continue;
+
+		// Keep this character.
+		size_t sz = srcIndex - prev;
+		copy(
+			src[prev .. srcIndex],
+			dst[dstIndex .. dstIndex + sz]);
+		dstIndex += sz;
+	}
+
+	// Clear out any characters left after the removal.
+	dst[dstIndex .. $] = ' ';
+
+	// Shrink dst so it doesn't include the extra spaces.
+	dst = dst[0..dstIndex];
+
+	//
+	return dst;
+}
+
 /// Given a set of fields pulled from a successful match, this normalizes each value
 /// by stripping off some punctuation and, if applicable, converting it to a standard
 /// USPS abbreviation.
 ///
-/// <param name="extracted">The dictionary of extracted fields.</param>
-/// returns: A dictionary of the extracted fields with normalized values.
-private string[string] normalize(const string[string] extracted)
+/// Params:
+///      elements     = The fields extracted from the address.
+///      elementsBuf  = The buffer that 'elements' resides within.
+///      textBuf      = Preallocated space for any new elements or enlargements.
+///
+/// Returns: A list of fields with normalized values represented by immutable
+///          strings.
+private FirmAddressElement[] normalize(
+	SoftAddressElement[]  elements,
+	SoftAddressElement[]  elementsBuf,
+	ref char[]            textBuf )
 {
-	import std.range;
-	import std.regex;
+	import std.algorithm.sorting : sort;
+	import std.algorithm.mutation : SwapStrategy;
+	import std.range.primitives;
 	import std.string;
+	//import std.regex;
 
-	string[string] normalized;
+	assert(elements.ptr == elementsBuf.ptr);
 
-	foreach (pair; extracted.byKeyValue())
+	// Sort the elements according to where the match occurred in the address.
+	// This is the first step in detecting any overlapping matches
+	// (ex: 'streetLine' containing 'predirectional' or 'street').
+	elements.sort!("a.propertyValue.ptr < b.propertyValue.ptr", SwapStrategy.stable);
+
+	// Perform operations that require modifying the strings in the individual
+	// address elements.  This requires that the element list still be "soft".
+	auto elementsIter = elements;
+	SoftAddressElement* elem = null;
+	SoftAddressElement* next = null;
+
+	// Provide a way to iterate over the elementsIter range with a window
+	// that is two elements wide.  This is necessary for overlap detection.
+	void advance()
 	{
-		string key = pair.key;
-		string value = pair.value;
+		elem = next;
+		if ( elementsIter.empty )
+			next = null;
+		else
+		{
+			next = &elementsIter.front;
+			elementsIter.popFront();
+		}
+	}
 
-		// Strip off some punctuation
-		static auto punctuationStripper = ctRegex!`^\s+|\s+$|[^\/\w\s\-\#\&]`;
-		value = std.regex.replaceAll(
-			value,
-			punctuationStripper,
-			"");
+	// Remove punctuation from all elements.  If the match slices overlap,
+	// then one of the slices will not be computed in-place, but will instead
+	// have its result placed in the textBuf.
+	advance();
+	while(true)
+	{
+		advance();
+		if ( elem is null )
+			break;
 
+		// Start off assuming an in-place removal will be performed.
+		char[] src = elem.propertyValue;
+		char[] dst = elem.propertyValue;
+
+		// Check for overlap.
+		if ( next !is null && next.propertyValue.ptr < src.ptr + src.length )
+		{
+			// Ensure there is enough space present in 'textBuf'.
+			// If not, do a reallocation.
+			if ( textBuf.length < src.length )
+				textBuf.length = src.length;
+
+			// Adjust 'dst' as necessary.
+			dst = textBuf;
+		}
+
+		// Remove punctuation.
+		// If (dst != src), then this operation will not modify the 'src'
+		// slice.  This allows us to avoid corrupting other matches if there
+		// is an overlap.
+		dst = normalizeRemovePunctuation(src,dst);
+
+		// Update textBuf if we used it.
+		if ( dst.ptr == textBuf.ptr )
+			textBuf = textBuf[dst.length .. $];
+
+		// Commit the results.
+		elem.propertyValue = dst;
+	}
+
+	// Mark the element list as containing "firm" elements.  This means that
+	// the strings held by the elements will not be modified any more
+	// (but they can be replaced).
+	auto firmedElems    = cast(FirmAddressElement[])elements;
+	auto firmedElemsBuf = cast(FirmAddressElement[])elementsBuf;
+
+	// Now perform normalization that requires immutable strings
+	// (firmed elements).
+	size_t     i = 0;
+	ptrdiff_t  secondaryNumberIndex = -1;
+	ptrdiff_t  secondaryUnitIndex   = -1;
+
+	foreach(ref element; firmedElems)
+	with(element)
+	{
 		// Normalize to official abbreviations where appropriate
-		value = getNormalizedValueForField(key, value);
+		propertyValue = getNormalizedValueForField(propertyName, propertyValue);
 
-		normalized[key] = value;
+		// Special case for an attached unit
+		switch(propertyName)
+		{
+			case "secondaryNumber" : secondaryNumberIndex = i; break;
+			case "secondaryUnit"   : secondaryUnitIndex   = i; break;
+			default: break;
+		}
+
+		i++;
 	}
 
 	// Special case for an attached unit
-	if ("secondaryNumber" in extracted
-	&&   ("secondaryUnit" !in extracted
-	||   std.string.strip(extracted["secondaryUnit"]).empty ))
+	if (secondaryNumberIndex >= 0
+	&&   (secondaryUnitIndex < 0
+	||   std.string.strip(firmedElems[secondaryUnitIndex].propertyValue).empty ))
 	{
-		normalized["secondaryUnit"] = "APT";
+		if ( secondaryUnitIndex < 0 )
+		{
+			// Grow the firmedElems array by one element.
+			// The function the original buffer so that we can do this without
+			// causing an allocation.
+			firmedElems = firmedElemsBuf[0 .. firmedElems.length+1];
+
+			// Allocate the new element as the secondaryUnit field.
+			secondaryUnitIndex = firmedElems.length - 1;
+			firmedElems[secondaryUnitIndex].propertyName  = "secondaryUnit";
+		}
+
+		firmedElems[secondaryUnitIndex].propertyValue = "APT";
 	}
 
-	return normalized;
+	return firmedElems;
 }
 
 // Other implementation details:

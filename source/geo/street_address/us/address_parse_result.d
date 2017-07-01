@@ -1,18 +1,15 @@
 ﻿module geo.street_address.us.address_parse_result;
 
-/*
-	import std.array, std.range : isInputRange, dropOne;
-	template TupleOf(alias R) if (isInputRange!(typeof(R))) {
-		import std.typecons;
-		static if (R.empty)
-			enum TupleOf = tuple();
-		else
-			enum TupleOf = tuple(R.front(), TupleOf!(R.dropOne()));
-	}
-*/
-/// <summary>
+package struct AddressElement(S)
+{
+	string  propertyName;
+	S       propertyValue;
+}
+
+alias SoftAddressElement = AddressElement!(char[]);
+alias FirmAddressElement = AddressElement!(string);
+
 /// Contains the fields that were extracted by the <see cref="AddressParser"/> object.
-/// </summary>
 public class AddressParseResult
 {
 	import std.algorithm;
@@ -23,7 +20,7 @@ public class AddressParseResult
 	/// parsable address elements.
 	private struct Lookup
 	{
-		string getterName;
+		string propertyName;
 	}
 	
 	/+
@@ -52,46 +49,92 @@ public class AddressParseResult
 	
 	private struct AddressProperty
 	{
-		string fieldName;
-		string getterName;
+		string privateName;
+		string propertyName;
 	}
 	
 	pure private static AddressProperty[] scanAddressProperties()
 	{
 		import std.meta;
 		import std.traits;
-		
+
 		AddressProperty[] result;
-		
-		foreach(fieldName; std.traits.FieldNameTuple!(typeof(this)))
+
+		foreach(privateName; std.traits.FieldNameTuple!(typeof(this)))
 		{
-			alias fieldSymbol = std.meta.Alias!(__traits(getMember, typeof(this), fieldName));
+			alias fieldSymbol = std.meta.Alias!(__traits(getMember, typeof(this), privateName));
 			static if ( std.traits.hasUDA!(fieldSymbol, Lookup) )
 			{
-				enum getterName = std.traits.getUDAs!(fieldSymbol, Lookup)[0].getterName;
-				result ~= AddressProperty(fieldName, getterName);
+				enum propertyName = std.traits.getUDAs!(fieldSymbol, Lookup)[0].propertyName;
+				result ~= AddressProperty(privateName, propertyName);
 			}
 		}
-		
+
 		return result;
 	}
 
-	//private enum AddressProperty[] properties = scanAddressProperties();
-	private static immutable(AddressProperty[]) properties = scanAddressProperties();
-	//private static immutable(string[]) fieldNames    = properties.map!"a.fieldName".array;
-	public  static immutable(string[]) propertyNames = properties.map!"a.getterName".array;
+	pure private static size_t[string]
+		getPropertyIndexMapping(const(AddressProperty)[] properties)
+	{
+		import std.exception : assumeUnique;
+		size_t[string] mapping;
+		size_t i = 0;
+		foreach(prop; properties)
+			mapping[prop.propertyName] = i++;
+		return mapping;
+	}
+/+
+	private alias AddressSetter = void delegate(string);
+	pure private static AddressSetter[string]
+		getAddressPropertySetters(
+			AddressProperty[] properties,
+			size_t[string]    propertiesBy)()
+	{
+		AddressSetter[string] mappings;
+		/+static+/ foreach(prop; std.meta.aliasSeqOf!properties)
+			mappings[prop.propertyName] = (string v){ mixin(prop.privateName~" = v;"; };
+		return mappings;
+	}
++/
 
-	/// <summary>
-	/// Initializes a new instance of the <see cref="AddressParseResult"/> class.
-	/// </summary>
-	/// <param name="fields">The fields that were parsed.</param>
+	private static immutable(AddressProperty[])  properties = scanAddressProperties();
+
+	public  static immutable(string[])        propertyNames = properties.map!"a.propertyName".array;
+	public  static immutable(size_t[string])  propertyIndexesByGetterName;
+
+	static this()
+	{
+		propertyIndexesByGetterName = getPropertyIndexMapping(properties);
+	}
+
+	//private static generateFieldSettingMixin(AddressProperty properties)()
+	private static generateFieldSettingCode()
+	{
+		import std.format;
+		string  genStr =
+		`switch(propertyName)
+		{
+			`;
+		foreach(prop; properties)
+			genStr ~= format(
+			`case "%s": %s = value; break;
+			`, prop.propertyName, prop.privateName);
+		genStr ~=
+			`default: break;
+		}
+		`;
+		return genStr;
+	}
+
+	private void setField(string propertyName, string value)
+	{
+		//mixin(generateFieldSettingMixin!properties);
+		mixin(generateFieldSettingCode());
+	}
+
+/+
 	this(string[string] fields)
 	{
-		import std.meta;
-		//import std.format;
-		//import std.stdio;
-		//writefln("fields == %s", fields);
-		
 		foreach(prop; std.meta.aliasSeqOf!properties)
 		{
 			//pragma(msg, format("prop.getterName == %s", prop.getterName));
@@ -103,101 +146,79 @@ public class AddressParseResult
 				__traits(getMember, this, prop.fieldName) = *elementRef;
 			}
 		}
+	}
++/
+	/// Initializes an new instance of the 'AddressParseResult' class.
+	///
+	/// Params:
+	///      elements = The fields that were parsed.
+	///
+	package void initialize(FirmAddressElement[] elements)
+	{
+		import std.exception : assumeUnique;
+		import std.meta;
 
-		/+
-		import std.traits;
-		foreach(fieldName; std.traits.FieldNameTuple!(typeof(this)))
-		{
-			writefln("field: %s", fieldName);
-			static if ( ! std.traits.hasUDA!(__traits(getMember, this, fieldName), "@Lookup") )
-			{
-				enum getterName = std.traits.getUDAs!(
-					__traits(getMember, this, fieldName), Lookup)[0].getterName;
-				string* elementRef = getterName in fields;
-				if ( elementRef !is null )
-					__traits(getMember, this, fieldName) = *elementRef;
-			}
-		}
-		+/
-		
-		/+
-		foreach ( key, val; fields )
-		{
-			setterDispatchTable[key](val);
-		}
-		+/
-
-		/+
-		var type = this.GetType();
-		foreach (var pair in fields)
-		{
-			var bindingFlags = 
-				BindingFlags.Instance | 
-				BindingFlags.Public | 
-				BindingFlags.IgnoreCase;
-			var propertyInfo = type.GetProperty(pair.Key, bindingFlags);
-			if (propertyInfo != null)
-			{
-				var methodInfo = propertyInfo.GetSetMethod(true);
-				if (methodInfo != null)
-				{
-					methodInfo.Invoke(this, new[] { pair.Value });
-				}
-			}
-		}
-		+/
+		foreach(element; elements)
+			setField(element.propertyName, element.propertyValue.assumeUnique);
 	}
 
-	/// <summary>
 	/// Gets the city name.
-	/// </summary>
-	public  @property string city() const { return pCity; }
+	public  pure @property string city() const { return pCity; }
 	private @Lookup("city") string pCity;
 
-	/// <summary>
 	/// Gets the house number.
-	/// </summary>
-	public  @property string number() const { return pNumber; }
+	public  pure @property string number() const { return pNumber; }
 	private @Lookup("number") string pNumber;
 
-	/// <summary>
 	/// Gets the predirectional, such as "N" in "500 N Main St".
-	/// </summary>
-	public  @property string predirectional() const { return pPredirectional; }
+	public  pure @property string predirectional() const { return pPredirectional; }
 	private @Lookup("predirectional") string pPredirectional;
 
-	/// <summary>
 	/// Gets the postdirectional, such as "NW" in "500 Main St NW".
-	/// </summary>
-	public  @property string postdirectional() const { return pPostdirectional; }
+	public  pure @property string postdirectional() const { return pPostdirectional; }
 	private @Lookup("postdirectional") string pPostdirectional;
 
-	/// <summary>
 	/// Gets the state or territory.
-	/// </summary>
-	public  @property string state() const { return pState; }
+	public  pure @property string state() const { return pState; }
 	private @Lookup("state") string pState;
 
-	/// <summary>
 	/// Gets the name of the street, such as "Main" in "500 N Main St".
-	/// </summary>
-	public  @property string street() const { return pStreet; }
+	public  pure @property string street() const { return pStreet; }
 	private @Lookup("street") string pStreet;
 
-	/// <summary>
+	// Things common to all of the streetLine formatters.
+	private enum numStreetLineFields = 7;
+	private enum streetLineFmtStr = "%-(%s %)";
+	private pure auto streetLineRange(string[] buf) const
+	{
+		assert(buf.length >= numStreetLineFields);
+		buf[0] = this.number;
+		buf[1] = this.predirectional;
+		buf[2] = this.street;
+		buf[3] = this.suffix;
+		buf[4] = this.postdirectional;
+		buf[5] = this.secondaryUnit;
+		buf[6] = this.secondaryNumber;
+		return buf[0..numStreetLineFields];
+	}
+
 	/// Gets the full street line, such as "500 N Main St" in "500 N Main St".
 	/// This is typically constructed by combining other elements in the parsed result.
 	/// However, in some special circumstances, most notably APO/FPO/DPO addresses, the
 	/// street line is set directly and the other elements will be null.
-	/// </summary>
 	public  @property string streetLine()
 	{
-		import std.array;
+		/+import std.array;
 		import std.regex;
-		import std.string;
+		import std.string;+/
 		if (this.pStreetLine is null)
 		{
-			auto tmpStreetLine = std.array.join([
+			import std.algorithm.iteration : filter;
+			import std.format;
+			string[numStreetLineFields] buf;
+			this.pStreetLine = format!streetLineFmtStr(
+				streetLineRange(buf[]).filter!`a !is null`);
+			/+auto tmpStreetLine = std.array.join([
 					this.number,
 					this.predirectional,
 					this.street,
@@ -211,53 +232,108 @@ public class AddressParseResult
 					tmpStreetLine,
 					std.regex.ctRegex!`\ +`,
 					" ")
-					.strip();
+					.strip();+/
 			return this.pStreetLine;
 		}
 
 		return this.pStreetLine;
 	}
-	
+
 	private @Lookup("streetLine") string pStreetLine;
 
-	/// <summary>
+	public pure auto buildStreetLine(Writer)(ref Writer w) const
+	{
+		import std.algorithm.iteration : filter;
+		import std.range.primitives;
+
+		static assert(isOutputRange!(Writer, char));
+
+		string[numStreetLineFields] streetLineFieldsBuf;
+		return w.formattedPut!streetLineFmtStr(
+				streetLineRange(streetLineFieldsBuf[]).filter!`a !is null`);
+	}
+
 	/// Gets the street suffix, such as "ST" in "500 N MAIN ST".
-	/// </summary>
-	public  @property string suffix() const { return pSuffix; }
+	public  pure @property string suffix() const { return pSuffix; }
 	private @Lookup("suffix") string pSuffix;
 
-	/// <summary>
 	/// Gets the secondary unit, such as "APT" in "500 N MAIN ST APT 3".
-	/// </summary>
-	public  @property string secondaryUnit() const { return pSecondaryUnit; }
+	public  pure @property string secondaryUnit() const { return pSecondaryUnit; }
 	private @Lookup("secondaryUnit") string pSecondaryUnit;
 
-	/// <summary>
 	/// Gets the secondary unit, such as "3" in "500 N MAIN ST APT 3".
-	/// </summary>
-	public  @property string secondaryNumber() const { return pSecondaryNumber; }
+	public  pure @property string secondaryNumber() const { return pSecondaryNumber; }
 	private @Lookup("secondaryNumber") string pSecondaryNumber;
 
-	/// <summary>
 	/// Gets the ZIP code.
-	/// </summary>
-	public  @property string zip() const { return pZip; }
+	public  pure @property string zip() const { return pZip; }
 	private @Lookup("zip") string pZip;
 
-	/// <summary>
 	/// Returns a string that represents this instance.
-	/// </summary>
-	/// <returns>
-	/// A string that represents this instance.
-	/// </returns>
+	/// This method has its result memoized within the AddressParseResult
+	/// instance, so there is no additional overhead to calling this
+	/// after it has already been called once.  As a consequence, this
+	/// method cannot be pure.
+	///
+	/// Returns: A string that represents this instance.
 	public override string toString()
 	{
 		import std.format;
-		return format(
-			"%s; %s, %s  %s",
+		return format!"%s; %s, %s  %s"(
 			this.streetLine,
 			this.city,
 			this.state,
 			this.zip);
 	}
+
+	/// This is a pure version of the common toString function.
+	/// This will always perform the string formatting necessary
+	/// to stringize the address, but will do so without performing memory
+	/// allocations, assuming the given 'textBuffer' is large enough.
+	/// This both allows the method to be pure, and also allows it to be used
+	/// in situations where memory heap allocations are highly undesirable.
+	///
+	/// Returns: A string that represents this instance.  This string will
+	/// be a slice of the given 'textBuffer'.
+	public pure auto toString(Writer)(ref Writer w) const
+	{
+		import std.range.primitives;
+
+		static assert(isOutputRange!(Writer, char));
+
+		auto wSave = w.save;
+
+		size_t outlen = 0;
+		outlen += buildStreetLine(w).length;
+		outlen += w.formattedPut!"; %s, %s  %s"(
+			this.city,
+			this.state,
+			this.zip).length;
+
+		return wSave[0..outlen];
+	}
+}
+
+// Makes std.format.formattedWrite less of a bear to deal with.
+import std.traits : isSomeString;
+private pure auto formattedPut(alias fmt, Writer, A...)(ref Writer w, A args)
+	if (isSomeString!(typeof(fmt)))
+{
+	import std.range.primitives;
+	import std.format;
+
+	// HACK: We have to assume that w has .length and is save-able,
+	// because formattedWrite does not provide the formatted string
+	// in any way, nor does it tell us how much of w was filled.
+	// Even if it gave us the latter information, we'd still have to
+	// make assumptions about w (ex: that it is random access and
+	// slice-able).
+
+	static assert(isOutputRange!(Writer, char));
+
+	auto wSave = w.save;
+	auto remainingBefore = w.length;
+	w.formattedWrite!fmt(args);
+	auto remainingAfter = w.length;
+	return wSave[0 .. remainingBefore - remainingAfter];
 }
