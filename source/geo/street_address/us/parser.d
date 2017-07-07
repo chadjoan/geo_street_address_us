@@ -106,13 +106,24 @@ public AddressParseResult parseAddress(string input, AddressParseResult output, 
 	import std.regex;
 	import std.string;
 	import std.uni;
+	import std.format; // Only allocate with this if handling errors.
 
 	// Even if you prefer assertions of enforcement for this, the time
 	// required to parse the address is going to be many orders of magnitude
 	// greater than the cost of the enforce statements.
-	// And it helps A LOT when nulls propagate in the wild.
+	// And it helps A LOT with troubleshooting when nulls propagate in the wild.
 	enforce(input  !is null);
 	enforce(output !is null);
+	//enforce(textBuf is null || textBuf.ptr !is input.ptr,
+	//	"Input address string starts at same address as output buffer.")
+	enforce(textBuf is null
+		|| textBuf.ptr >= input.ptr   + input.length
+		|| input.ptr   >= textBuf.ptr + textBuf.length,
+		format("Input address string and output buffer overlap.\n"~
+			"Input string:  %X .. %X, '%s'\n"~
+			"Output buffer: %X .. %X\n",
+			input.ptr,   input.ptr   + input.length, input,
+			textBuf.ptr, textBuf.ptr + textBuf.length));
 
 	//
 	auto address = std.string.strip(input);

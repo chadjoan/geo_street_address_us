@@ -241,7 +241,7 @@ public class AddressParseResult
 
 	private @Lookup("streetLine") string pStreetLine;
 
-	public pure auto buildStreetLine(Writer)(ref Writer w) const
+	public auto buildStreetLine(Writer)(ref Writer w) const
 	{
 		import std.algorithm.iteration : filter;
 		import std.range.primitives;
@@ -295,7 +295,7 @@ public class AddressParseResult
 	///
 	/// Returns: A string that represents this instance.  This string will
 	/// be a slice of the given 'textBuffer'.
-	public pure auto toString(Writer)(ref Writer w) const
+	public auto toString(Writer)(ref Writer w) const
 	{
 		import std.range.primitives;
 
@@ -316,7 +316,7 @@ public class AddressParseResult
 
 // Makes std.format.formattedWrite less of a bear to deal with.
 import std.traits : isSomeString;
-private pure auto formattedPut(alias fmt, Writer, A...)(ref Writer w, A args)
+private auto formattedPut(alias fmt, Writer, A...)(ref Writer w, A args)
 	if (isSomeString!(typeof(fmt)))
 {
 	import std.range.primitives;
