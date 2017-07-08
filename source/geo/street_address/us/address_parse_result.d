@@ -302,15 +302,13 @@ public class AddressParseResult
 		static assert(isOutputRange!(Writer, char));
 
 		auto wSave = w.save;
-
-		size_t outlen = 0;
-		outlen += buildStreetLine(w).length;
-		outlen += w.formattedPut!"; %s, %s  %s"(
+		buildStreetLine(w);
+		w.formattedPut!"; %s, %s  %s"(
 			this.city,
 			this.state,
-			this.zip).length;
+			this.zip);
 
-		return wSave[0..outlen];
+		return w.slice(wSave);
 	}
 }
 
@@ -332,8 +330,6 @@ private auto formattedPut(alias fmt, Writer, A...)(ref Writer w, A args)
 	static assert(isOutputRange!(Writer, char));
 
 	auto wSave = w.save;
-	auto remainingBefore = w.length;
 	w.formattedWrite!fmt(args);
-	auto remainingAfter = w.length;
-	return wSave[0 .. remainingBefore - remainingAfter];
+	return w.slice(wSave);
 }
