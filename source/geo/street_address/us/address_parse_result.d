@@ -248,6 +248,16 @@ public class AddressParseResult
 
 		static assert(isOutputRange!(Writer, char));
 
+		// The regex might assign the streetLine specifically, ex: for PO Boxes.
+		if (this.pStreetLine !is null)
+		{
+			auto wSave = w.save;
+			w.put(this.pStreetLine);
+			return w.slice(wSave);
+		}
+
+		// But in most cases, we will need to compose the street line
+		// out of other components.
 		string[numStreetLineFields] streetLineFieldsBuf;
 		return w.formattedPut!streetLineFmtStr(
 				streetLineRange(streetLineFieldsBuf[]).filter!`a !is null`);
