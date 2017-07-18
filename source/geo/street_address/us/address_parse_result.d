@@ -10,7 +10,7 @@ alias SoftAddressElement = AddressElement!(char[]);
 alias FirmAddressElement = AddressElement!(string);
 
 /// Contains the fields that were extracted by the <see cref="AddressParser"/> object.
-public class AddressParseResult
+public struct AddressParseResult
 {
 	import std.algorithm;
 	import std.array;
@@ -286,7 +286,7 @@ public class AddressParseResult
 	/// method cannot be pure.
 	///
 	/// Returns: A string that represents this instance.
-	public override string toString()
+	public string toString()
 	{
 		import std.format;
 		return format!"%s; %s, %s  %s"(

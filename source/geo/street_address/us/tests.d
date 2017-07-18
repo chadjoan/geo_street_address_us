@@ -107,7 +107,8 @@ public void RegexAndResultTerminologyAgree()
 public void CanParseTypicalAddressWithoutPunctuationAfterStreetLine()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("1005 N Gravenstein Highway Sebastopol, CA 95472");
+	AddressParseResult address;
+	parseAddress("1005 N Gravenstein Highway Sebastopol, CA 95472", &address);
 
 	assert(address.city == "SEBASTOPOL");
 	assert(address.number == "1005");
@@ -126,7 +127,8 @@ public void CanParseTypicalAddressWithoutPunctuationAfterStreetLine()
 public void CanParseTypicalAddressWithPunctuation()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("1005 N Gravenstein Highway, Sebastopol, CA 95472");
+	AddressParseResult address;
+	parseAddress("1005 N Gravenstein Highway, Sebastopol, CA 95472", &address);
 
 	assert(address.city == "SEBASTOPOL");
 	assert(address.number == "1005");
@@ -145,7 +147,8 @@ public void CanParseTypicalAddressWithPunctuation()
 public void CanParseAddressWithRangelessSecondaryUnit()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("1050 Broadway Penthouse, New York, NY 10001");
+	AddressParseResult address;
+	parseAddress("1050 Broadway Penthouse, New York, NY 10001", &address);
 
 	assert(address.city == "NEW YORK");
 	assert(address.number == "1050");
@@ -164,7 +167,8 @@ public void CanParseAddressWithRangelessSecondaryUnit()
 public void CanParsePostOfficeBoxAddress()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("P.O. BOX 4857, New York, NY 10001");
+	AddressParseResult address;
+	parseAddress("P.O. BOX 4857, New York, NY 10001", &address);
 
 	assert(address.city == "NEW YORK");
 	assert(address.number is null);
@@ -190,7 +194,8 @@ public void CanParsePostOfficeBoxAddress()
 public void CanParseMilitaryAddress()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("PSC BOX 453, APO AE 99969");
+	AddressParseResult address;
+	parseAddress("PSC BOX 453, APO AE 99969", &address);
 
 	assert(address.city == "APO");
 	assert(address.number is null);
@@ -209,7 +214,8 @@ public void CanParseMilitaryAddress()
 public void CanParseAddressWithoutPunctuation()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("999 West 89th Street Apt A New York NY 10024");
+	AddressParseResult address;
+	parseAddress("999 West 89th Street Apt A New York NY 10024", &address);
 
 	assert(address.city == "NEW YORK");
 	assert(address.number == "999");
@@ -233,7 +239,8 @@ public void CanParseAddressWithoutPunctuation()
 public void CanParseGridStyleAddress()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("842 E 1700 S, Salt Lake City, UT 84105");
+	AddressParseResult address;
+	parseAddress("842 E 1700 S, Salt Lake City, UT 84105", &address);
 
 	assert(address.city == "SALT LAKE CITY");
 	assert(address.number == "842");
@@ -257,7 +264,8 @@ public void CanParseGridStyleAddress()
 public void CanParseAddressWithAlphanumericRange()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("N6W23001 BLUEMOUND ROAD, ROLLING MEADOWS, IL, 12345");
+	AddressParseResult address;
+	parseAddress("N6W23001 BLUEMOUND ROAD, ROLLING MEADOWS, IL, 12345", &address);
 
 	assert(address.city == "ROLLING MEADOWS");
 	assert(address.number == "N6W23001");
@@ -280,7 +288,8 @@ public void CanParseAddressWithAlphanumericRange()
 public void CanParseAddressWithSpacedAlphanumericRange()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("N645 W23001 BLUEMOUND ROAD, ROLLING MEADOWS, IL, 12345");
+	AddressParseResult address;
+	parseAddress("N645 W23001 BLUEMOUND ROAD, ROLLING MEADOWS, IL, 12345", &address);
 
 	assert(address.city == "ROLLING MEADOWS");
 	assert(address.number == "N645W23001");
@@ -306,7 +315,8 @@ public void CanParseAddressWithSpacedAlphanumericRange()
 public void CanParseQueensStyleAddress()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("123-465 34th St New York NY 12345");
+	AddressParseResult address;
+	parseAddress("123-465 34th St New York NY 12345", &address);
 
 	assert(address.city == "NEW YORK");
 	assert(address.number == "123-465");
@@ -330,7 +340,8 @@ public void CanParseQueensStyleAddress()
 public void CanParseAddressWithCardinalStreetName()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("500 SOUTH STREET VIRGINIA BEACH VIRGINIA 23452");
+	AddressParseResult address;
+	parseAddress("500 SOUTH STREET VIRGINIA BEACH VIRGINIA 23452", &address);
 
 	assert(address.city == "VIRGINIA BEACH");
 	assert(address.number == "500");
@@ -356,7 +367,8 @@ public void CanParseAddressWithCardinalStreetName()
 public void CanParseAddressWithRangedUnitAttachedToNumber()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("403D BERRYFIELD LANE CHESAPEAKE VA 23224");
+	AddressParseResult address;
+	parseAddress("403D BERRYFIELD LANE CHESAPEAKE VA 23224", &address);
 
 	assert(address.city == "CHESAPEAKE");
 	assert(address.number == "403");
@@ -378,7 +390,8 @@ public void CanParseAddressWithRangedUnitAttachedToNumber()
 public void CanParseFractionalAddress()
 {
 	debug writef("  %s... ", functionBaseName);
-	auto address = parseAddress("123 1/2 MAIN ST, RICHMOND, VA 23221");
+	AddressParseResult address;
+	parseAddress("123 1/2 MAIN ST, RICHMOND, VA 23221", &address);
 
 	assert(address.city == "RICHMOND");
 	assert(address.number == "123 1/2");

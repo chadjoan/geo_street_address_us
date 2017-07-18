@@ -77,10 +77,23 @@ static this()
 ///      input = The input string.
 ///
 /// Returns: The parsed address, or null if the address could not be parsed.
-public AddressParseResult parseAddress(string input)
+public AddressParseResult* parseAddress(string input)
+{
+	AddressParseResult* output = new AddressParseResult;
+	return parseAddress(input, output);
+}
+
+/// Attempts to parse the given input as a US address.
+///
+/// Params:
+///      input = The input string.
+///      output = A pre-allocated but uninitialized parse result object.
+///
+/// Returns: The parsed address, or null if the address could not be parsed.
+public AddressParseResult* parseAddress(string input, AddressParseResult* output)
 {
 	char[] dummy = null;
-	return parseAddress(input, new AddressParseResult, dummy);
+	return parseAddress(input, output, dummy);
 }
 
 /// Attempts to parse the given input as a US address.
@@ -100,7 +113,7 @@ public AddressParseResult parseAddress(string input)
 ///
 /// Returns: The parsed address, or null if the address could not be parsed.
 ///
-public AddressParseResult parseAddress(string input, AddressParseResult output, ref char[] textBuf)
+public AddressParseResult* parseAddress(string input, AddressParseResult* output, ref char[] textBuf)
 {
 	import std.exception : enforce;
 	import std.regex;
