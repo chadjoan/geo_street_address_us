@@ -126,7 +126,7 @@ public struct AddressParseResult
 		return genStr;
 	}
 
-	private void setField(string propertyName, string value)
+	private @nogc void setField(string propertyName, string value)
 	{
 		//mixin(generateFieldSettingMixin!properties);
 		mixin(generateFieldSettingCode());
@@ -153,7 +153,7 @@ public struct AddressParseResult
 	/// Params:
 	///      elements = The fields that were parsed.
 	///
-	package void initialize(FirmAddressElement[] elements)
+	@nogc package void initialize(FirmAddressElement[] elements)
 	{
 		import std.exception : assumeUnique;
 		import std.meta;
@@ -163,33 +163,33 @@ public struct AddressParseResult
 	}
 
 	/// Gets the city name.
-	public  pure @property string city() const { return pCity; }
+	public  pure @nogc @property string city() const { return pCity; }
 	private @Lookup("city") string pCity;
 
 	/// Gets the house number.
-	public  pure @property string number() const { return pNumber; }
+	public  pure @nogc @property string number() const { return pNumber; }
 	private @Lookup("number") string pNumber;
 
 	/// Gets the predirectional, such as "N" in "500 N Main St".
-	public  pure @property string predirectional() const { return pPredirectional; }
+	public  pure @nogc @property string predirectional() const { return pPredirectional; }
 	private @Lookup("predirectional") string pPredirectional;
 
 	/// Gets the postdirectional, such as "NW" in "500 Main St NW".
-	public  pure @property string postdirectional() const { return pPostdirectional; }
+	public  pure @nogc @property string postdirectional() const { return pPostdirectional; }
 	private @Lookup("postdirectional") string pPostdirectional;
 
 	/// Gets the state or territory.
-	public  pure @property string state() const { return pState; }
+	public  pure @nogc @property string state() const { return pState; }
 	private @Lookup("state") string pState;
 
 	/// Gets the name of the street, such as "Main" in "500 N Main St".
-	public  pure @property string street() const { return pStreet; }
+	public  pure @nogc @property string street() const { return pStreet; }
 	private @Lookup("street") string pStreet;
 
 	// Things common to all of the streetLine formatters.
 	private enum numStreetLineFields = 7;
 	private enum streetLineFmtStr = "%-(%s %)";
-	private pure auto streetLineRange(string[] buf) const
+	private pure @nogc auto streetLineRange(string[] buf) const
 	{
 		assert(buf.length >= numStreetLineFields);
 		buf[0] = this.number;
@@ -264,19 +264,19 @@ public struct AddressParseResult
 	}
 
 	/// Gets the street suffix, such as "ST" in "500 N MAIN ST".
-	public  pure @property string suffix() const { return pSuffix; }
+	public  pure @nogc @property string suffix() const { return pSuffix; }
 	private @Lookup("suffix") string pSuffix;
 
 	/// Gets the secondary unit, such as "APT" in "500 N MAIN ST APT 3".
-	public  pure @property string secondaryUnit() const { return pSecondaryUnit; }
+	public  pure @nogc @property string secondaryUnit() const { return pSecondaryUnit; }
 	private @Lookup("secondaryUnit") string pSecondaryUnit;
 
 	/// Gets the secondary unit, such as "3" in "500 N MAIN ST APT 3".
-	public  pure @property string secondaryNumber() const { return pSecondaryNumber; }
+	public  pure @nogc @property string secondaryNumber() const { return pSecondaryNumber; }
 	private @Lookup("secondaryNumber") string pSecondaryNumber;
 
 	/// Gets the ZIP code.
-	public  pure @property string zip() const { return pZip; }
+	public  pure @nogc @property string zip() const { return pZip; }
 	private @Lookup("zip") string pZip;
 
 	/// Returns a string that represents this instance.

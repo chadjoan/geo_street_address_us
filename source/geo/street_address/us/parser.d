@@ -25,29 +25,29 @@ import std.traits : isInstanceOf;
 private
 {
 	/// Maps directional names (north, northeast, etc.) to abbreviations (N, NE, etc.).
-	enum string[2][] directionalsArray = twoColumnCsvFileToArray!"directionals.csv";
+	enum string[][2] directionalsArray = twoColumnCsvFileToArray!"directionals.csv";
 	immutable string[string] directionalsAA; /// ditto
 
 	/// Maps lowercased US state and territory names to their canonical two-letter
 	/// postal abbreviations.
-	enum string[2][] statesArray = twoColumnCsvFileToArray!"states.csv";
+	enum string[][2] statesArray = twoColumnCsvFileToArray!"states.csv";
 	immutable string[string] statesAA; /// ditto
 
 	/// Maps lowerecased USPS standard street suffixes to their canonical postal
 	/// abbreviations as found in TIGER/Line.
-	enum string[2][] suffixesArray = twoColumnCsvFileToArray!"suffixes.csv";
+	enum string[][2] suffixesArray = twoColumnCsvFileToArray!"suffixes.csv";
 	immutable string[string] suffixesAA; /// ditto
 
 	/// Secondary units that require a number after them.
-	enum string[2][] rangedSecondaryUnitsArray = twoColumnCsvFileToArray!"ranged_secondary_units.csv";
+	enum string[][2] rangedSecondaryUnitsArray = twoColumnCsvFileToArray!"ranged_secondary_units.csv";
 	immutable string[string] rangedSecondaryUnitsAA; /// ditto
 
 	/// Secondary units that do not require a number after them.
-	enum string[2][] rangelessSecondaryUnitsArray = twoColumnCsvFileToArray!"rangeless_secondary_units.csv";
+	enum string[][2] rangelessSecondaryUnitsArray = twoColumnCsvFileToArray!"rangeless_secondary_units.csv";
 	immutable string[string] rangelessSecondaryUnitsAA; /// ditto
 
 	/// A combined dictionary of the ranged and rangeless secondary units.
-	enum string[2][] allSecondaryUnitsArray = rangedSecondaryUnitsArray ~ rangelessSecondaryUnitsArray;
+	enum string[][2] allSecondaryUnitsArray = concatTwoColumnArray(rangedSecondaryUnitsArray, rangelessSecondaryUnitsArray);
 	immutable string[string] allSecondaryUnitsAA; /// ditto
 }
 
@@ -113,13 +113,13 @@ public AddressParseResult* parseAddress(string input, AddressParseResult* output
 ///
 /// Returns: The parsed address, or null if the address could not be parsed.
 ///
-public AddressParseResult* parseAddress(string input, AddressParseResult* output, ref char[] textBuf)
+public /+@nogc+/ AddressParseResult* parseAddress(string input, AddressParseResult* output, ref char[] textBuf)
 {
 	import std.exception : enforce;
+	import std.format;
 	import std.regex;
 	import std.string;
 	import std.uni;
-	import std.format; // Only allocate with this if handling errors.
 
 	// Even if you prefer assertions of enforcement for this, the time
 	// required to parse the address is going to be many orders of magnitude
@@ -185,7 +185,7 @@ public AddressParseResult* parseAddress(string input, AddressParseResult* output
 ///
 /// Returns: A list of SoftAddressElement's, each of which contains a mapping
 ///   between a field name and a field value.
-private SoftAddressElement[] getApplicableFields(RegexCaptures) (
+private /+@nogc+/ SoftAddressElement[] getApplicableFields(RegexCaptures) (
 	RegexCaptures         captures,
 	SoftAddressElement[]  addressElems
 	)
@@ -224,26 +224,40 @@ private SoftAddressElement[] getApplicableFields(RegexCaptures) (
 /// <param name="input">The value to test against the regular expressions.</param>
 /// <returns>The correct USPS abbreviation, or the original value if no regular expression
 /// matched successfully.</returns>
-private static string getNormalizedValueByRegexLookup
-	(string[2][] table) (string  input)
+private string getNormalizedValueByRegexLookup(string[][2] table)(string  input)
 {
 	import std.array : array;
 	import std.meta : aliasSeqOf, staticMap;
-	import std.range : zip;
 	import std.regex;
 
 	// Convert the table's left column into an array of regular expression
 	// parsers that are compiled at (program) compile-time.
-	enum patterns = table.leftColumn.array;
-	alias largeTupleOfRegexes = staticMap!(ctRegex, aliasSeqOf!patterns);
-	static auto arrayOfRegexes = [largeTupleOfRegexes];
+	enum patterns = table.leftColumn;
+	static string[] replacements = table.rightColumn;
+	//alias largeTupleOfRegexes = staticMap!(ctRegex, aliasSeqOf!patterns);
+	//static Regex!(char)[] arrayOfRegexes = [largeTupleOfRegexes];
+	
+	static auto makeRegexArray()
+	{
+		import std.range.primitives;
+		auto result = new Regex!(char)[patterns.length];
+		for(size_t i = 0; i < patterns.length; i++)
+			result[i] = regex(patterns[i],"s");
+		return result;
+	}
+
+	static Regex!(char)[] arrayOfRegexes = makeRegexArray;
 
 	// Iterate over the compiled regexes in lockstep with the
 	// table's right column.  The right column is used to provide
 	// replacement values if the regex (derived from the left column)
 	// matches the input.
-	foreach (regex, replacement; zip(arrayOfRegexes, table.rightColumn))
+	assert(patterns.length == replacements.length);
+	assert(arrayOfRegexes.length == replacements.length);
+	for ( size_t i = 0; i < arrayOfRegexes.length; i++ )
 	{
+		auto regex = arrayOfRegexes[i];
+		auto replacement = replacements[i];
 		if ( std.regex.matchFirst(input, regex) )
 			return replacement;
 	}
@@ -261,7 +275,7 @@ private static string getNormalizedValueByRegexLookup
 /// <param name="input">The value to search for in the list of strings.</param>
 /// <returns>The correct USPS abbreviation, or the original value if no string
 /// matched successfully.</returns>
-private static string getNormalizedValueByStaticLookup(
+private /+@nogc+/ string getNormalizedValueByStaticLookup(
 	const string[string]  map,
 	string                value)
 {
@@ -280,10 +294,12 @@ private static string getNormalizedValueByStaticLookup(
 /// <param name="field">The type of the field.</param>
 /// <param name="input">The value of the field.</param>
 /// <returns>The normalized value.</returns>
-private static string getNormalizedValueForField( string field, string input )
+private /+@nogc+/ string getNormalizedValueForField( string field, string input, ref char[] textBuf )
 {
 	import std.algorithm;
-	import std.array;
+	import std.array : replaceInto;
+	import std.exception : assumeUnique;
+	import std.range.primitives;
 
 	auto output = input;
 
@@ -305,7 +321,20 @@ private static string getNormalizedValueForField( string field, string input )
 		case "number":
 			if (!input.canFind('/'))
 			{
-				output = input.replace(" ", "");
+				char[] buffer = textBuf;
+				auto appender = NogcAppender(buffer);
+				char[] before = appender.data;
+				appender.replaceInto(input," ", "");
+				char[] after = appender.data;
+
+				// We assume that replaceInto modifies textBuf and
+				// not a copy of textBuf.
+				assert(before.ptr !is after.ptr);
+				assert(textBuf.ptr < buffer.ptr);
+
+				// Retrieve the result and advance the textBuf.
+				output = textBuf[0 .. (after.ptr - before.ptr)].assumeUnique;
+				textBuf = buffer;
 			}
 
 			break;
@@ -493,7 +522,7 @@ public auto buildAddressRegex()
 /// (This can simplify some buffer management calculations for the caller.)
 ///
 /// Returns: a slice of 'dst' populated with the result of processing 'src'.
-private char[] normalizeRemovePunctuation(char[] src, char[] dst)
+private /+@nogc+/ char[] normalizeRemovePunctuation(char[] src, char[] dst)
 {
 	import std.algorithm.mutation : copy;
 	import std.string;
@@ -554,7 +583,7 @@ private char[] normalizeRemovePunctuation(char[] src, char[] dst)
 ///
 /// Returns: A list of fields with normalized values represented by immutable
 ///          strings.
-private FirmAddressElement[] normalize(
+private /+@nogc+/ FirmAddressElement[] normalize(
 	SoftAddressElement[]  elements,
 	SoftAddressElement[]  elementsBuf,
 	ref char[]            textBuf )
@@ -648,7 +677,7 @@ private FirmAddressElement[] normalize(
 	with(element)
 	{
 		// Normalize to official abbreviations where appropriate
-		propertyValue = getNormalizedValueForField(propertyName, propertyValue);
+		propertyValue = getNormalizedValueForField(propertyName, propertyValue, textBuf);
 
 		// Special case for an attached unit
 		switch(propertyName)
@@ -685,29 +714,41 @@ private FirmAddressElement[] normalize(
 }
 
 // Other implementation details:
-pure private string[2][] parseTwoColumnCsv(string inputCsv)
+pure private string[][2] parseTwoColumnCsv(string inputCsv)
 {
 	import std.custom_csv;
 	import std.typecons;
 	
-	string[2][] result;
+	string[][2] result;
 	
 	foreach ( record; csvReader!(Tuple!(string,string))(inputCsv) )
-		result ~= [record[0],record[1]];
-	
+	{
+		result[0] ~= record[0];
+		result[1] ~= record[1];
+	}
+
 	return result;
 }
 
-pure private string[2][] twoColumnCsvFileToArray(string csvFile)()
+pure private string[][2] twoColumnCsvFileToArray(string csvFile)()
 {
 	return import(csvFile).parseTwoColumnCsv();
 }
 
-pure private string[string] twoColumnArrayToAA(const string[2][] arr)
+pure private string[string] twoColumnArrayToAA(const string[][2] arr)
 {
+	import std.range : zip;
 	string[string] result;
-	foreach ( pair; arr )
-		result[pair[0]] = pair[1];
+	foreach ( left, right; zip(arr[0], arr[1]) )
+		result[left] = right;
+	return result;
+}
+
+pure private const(string)[][2] concatTwoColumnArray(const(string)[][2] a, const(string)[][2] b)
+{
+	const(string)[][2] result;
+	result[0] = a[0] ~ b[0];
+	result[1] = a[1] ~ b[1];
 	return result;
 }
 
@@ -715,7 +756,7 @@ pure private string[string] twoColumnArrayToAA(const string[2][] arr)
 pure private string[string] importTwoColumnCsv(string csvFile)()
 {
 	// Force the parse to happen at compile time.
-	immutable string[2][] tempArray = import(csvFile).parseTwoColumnCsv();
+	immutable string[][2] tempArray = import(csvFile).parseTwoColumnCsv();
 	
 	// Convert the parsed array into a runtime Associative Array and return it.
 	return tempArray.twoColumnArrayToAA();
@@ -725,13 +766,13 @@ pure private string[string] importTwoColumnCsv(string csvFile)()
 pure private auto leftColumn(string[][] table)
 {
 	import std.algorithm.iteration : map;
-	return table.map!(row => row[0]);
+	return table[0];
 }
 
 pure private auto rightColumn(string[][] table)
 {
 	import std.algorithm.iteration : map;
-	return table.map!(row => row[$-1]);
+	return table[$-1];
 }
 
 
@@ -970,3 +1011,78 @@ void printNamedCapturesByIndex(R, C)(R regex, C captures)
 	writeln("================================================================");
 	writeln("");
 }
+
+
+private struct NogcAppender
+{
+	@nogc:
+	char[]* bufferRef;
+
+	@property ref char[] data() { return *bufferRef; }
+	alias data this;
+
+	this(ref char[] buffer)
+	{
+		bufferRef = &buffer;
+	}
+
+	void put(const(char)[] val)
+	{
+		char[] buffer = *bufferRef;
+		buffer[0..val.length] = val[];
+		*bufferRef = buffer[val.length .. $];
+	}
+
+	void put(char val)
+	{
+		char[] buffer = *bufferRef;
+		buffer[0] = val;
+		*bufferRef = buffer[1 .. $];
+	}
+}
+
+/+
+// Nope.  Nice try though.
+// (Does not compile on DMD v2.074.1)
+@nogc string nogc_format(string fmtstr, T...)(T args)
+{
+	import std.format;
+	import std.exception : assumeUnique;
+
+	static char[1024] _buffer;
+	char[] buffer = _buffer;
+
+	struct NogcAppender
+	{
+		@nogc:
+		char[]* bufferRef;
+
+		@property ref char[] data() { return *bufferRef; }
+		alias data this;
+
+		void put(const(char)[] val)
+		{
+			char[] buffer = *bufferRef;
+			buffer[0..val.length] = val[];
+			*bufferRef = buffer[val.length .. $];
+		}
+
+		void put(char val)
+		{
+			char[] buffer = *bufferRef;
+			buffer[0] = val;
+			*bufferRef = buffer[1 .. $];
+		}
+	}
+
+	char[] before = buffer;
+
+	NogcAppender appender;
+	appender.data = buffer;
+	appender.formattedWrite!fmtstr(args);
+
+	char[] after = appender.data;
+
+	return buffer[0 .. (after.ptr - before.ptr)].assumeUnique;
+}
++/
