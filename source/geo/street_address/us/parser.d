@@ -173,7 +173,7 @@ public /+@nogc+/ AddressParseResult* parseAddress(string input, AddressParseResu
 	SoftAddressElement[AddressParseResult.propertyNames.length] addressElemsBuf;
 
 	// Populate the address elements buffer.
-	auto addressElems = getApplicableFields(captures, addressElemsBuf[]);
+	auto addressElems = getApplicableFields(input, addressEmplaced, captures, addressElemsBuf[]);
 
 	// Normalize and finish.
 	output.initialize(normalize(addressElems, addressElemsBuf[], textBuf));
@@ -186,6 +186,8 @@ public /+@nogc+/ AddressParseResult* parseAddress(string input, AddressParseResu
 /// Returns: A list of SoftAddressElement's, each of which contains a mapping
 ///   between a field name and a field value.
 private /+@nogc+/ SoftAddressElement[] getApplicableFields(RegexCaptures) (
+	string                addressOriginal,
+	const(char)[]         addressEmplaced,
 	RegexCaptures         captures,
 	SoftAddressElement[]  addressElems
 	)
@@ -194,6 +196,9 @@ private /+@nogc+/ SoftAddressElement[] getApplicableFields(RegexCaptures) (
 	import std.algorithm.iteration : splitter;
 	import std.range;
 	import std.regex;
+	import std.uni : icmp;
+
+	assert(0 == icmp(addressOriginal, addressEmplaced));
 
 	size_t i = 0;
 	foreach (captureName; threadLocalAddressRegex.namedCaptures)
@@ -205,8 +210,33 @@ private /+@nogc+/ SoftAddressElement[] getApplicableFields(RegexCaptures) (
 		auto matchSlice = captures[captureName];
 		if ( matchSlice !is null && !matchSlice.empty )
 		{
+			auto addressEndPtr = addressEmplaced.ptr + addressEmplaced.length;
+			auto matchSliceEndPtr = matchSlice.ptr + matchSlice.length;
+
+			assert(addressEmplaced.ptr <= matchSlice.ptr);
+			assert(matchSlice.ptr <= addressEndPtr);
+
+			assert(addressEmplaced.ptr <= matchSliceEndPtr);
+			assert(matchSliceEndPtr <= addressEndPtr);
+
+			auto lo = matchSlice.ptr - addressEmplaced.ptr;
+			auto hi = matchSliceEndPtr - addressEmplaced.ptr;
+
+			// These are calculated from slices into addressEmplaced and not
+			// addressOriginal.  HOWEVER, as long as the transformation from
+			// the one to the other does not actually move any of the
+			// characters in the text, then these indices will do the same
+			// thing on both strings.  As of this writing, the only
+			// difference between addressOriginal and addressEmplaced is that
+			// addressEmplaced is all uppercase, while addressOriginal is mixed
+			// case.  They should otherwise be the same string.
+			assert(addressEmplaced.length == addressOriginal.length);
+			assert(hi <= addressOriginal.length);
+
 			addressElems[i].propertyName  = fieldName;
 			addressElems[i].propertyValue = matchSlice;
+			addressElems[i].loIndex = lo;
+			addressElems[i].hiIndex = hi;
 			i++;
 		}
 	}

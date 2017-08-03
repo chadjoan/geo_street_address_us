@@ -1,13 +1,32 @@
 ﻿module geo.street_address.us.address_parse_result;
 
+import std.range.primitives;
+
 package struct AddressElement(S)
 {
 	string  propertyName;
 	S       propertyValue;
+	size_t  loIndex = size_t.max;
+	size_t  hiIndex = 0;
 }
 
 alias SoftAddressElement = AddressElement!(char[]);
 alias FirmAddressElement = AddressElement!(string);
+
+public struct AddressComponent
+{
+	alias normalized this;
+	string normalized;
+	size_t loIndex = size_t.max;
+	size_t hiIndex = 0;
+
+	@nogc this(const ref FirmAddressElement element)
+	{
+		normalized = element.propertyValue;
+		this.loIndex = element.loIndex;
+		this.hiIndex = element.hiIndex;
+	}
+}
 
 /// Contains the fields that were extracted by the <see cref="AddressParser"/> object.
 public struct AddressParseResult
@@ -117,7 +136,7 @@ public struct AddressParseResult
 			`;
 		foreach(prop; properties)
 			genStr ~= format(
-			`case "%s": %s = value; break;
+			`case "%s": %s = AddressComponent(value); break;
 			`, prop.propertyName, prop.privateName);
 		genStr ~=
 			`default: break;
@@ -126,7 +145,7 @@ public struct AddressParseResult
 		return genStr;
 	}
 
-	private @nogc void setField(string propertyName, string value)
+	private @nogc void setField(string propertyName, const ref FirmAddressElement value)
 	{
 		//mixin(generateFieldSettingMixin!properties);
 		mixin(generateFieldSettingCode());
@@ -159,37 +178,37 @@ public struct AddressParseResult
 		import std.meta;
 
 		foreach(element; elements)
-			setField(element.propertyName, element.propertyValue.assumeUnique);
+			setField(element.propertyName, element);
 	}
 
 	/// Gets the city name.
-	public  pure @nogc @property string city() const { return pCity; }
-	private @Lookup("city") string pCity;
+	public  pure @nogc @property ref const(AddressComponent) city() const { return pCity; }
+	private @Lookup("city") AddressComponent pCity;
 
 	/// Gets the house number.
-	public  pure @nogc @property string number() const { return pNumber; }
-	private @Lookup("number") string pNumber;
+	public  pure @nogc @property ref const(AddressComponent) number() const { return pNumber; }
+	private @Lookup("number") AddressComponent pNumber;
 
 	/// Gets the predirectional, such as "N" in "500 N Main St".
-	public  pure @nogc @property string predirectional() const { return pPredirectional; }
-	private @Lookup("predirectional") string pPredirectional;
+	public  pure @nogc @property ref const(AddressComponent) predirectional() const { return pPredirectional; }
+	private @Lookup("predirectional") AddressComponent pPredirectional;
 
 	/// Gets the postdirectional, such as "NW" in "500 Main St NW".
-	public  pure @nogc @property string postdirectional() const { return pPostdirectional; }
-	private @Lookup("postdirectional") string pPostdirectional;
+	public  pure @nogc @property ref const(AddressComponent) postdirectional() const { return pPostdirectional; }
+	private @Lookup("postdirectional") AddressComponent pPostdirectional;
 
 	/// Gets the state or territory.
-	public  pure @nogc @property string state() const { return pState; }
-	private @Lookup("state") string pState;
+	public  pure @nogc @property ref const(AddressComponent) state() const { return pState; }
+	private @Lookup("state") AddressComponent pState;
 
 	/// Gets the name of the street, such as "Main" in "500 N Main St".
-	public  pure @nogc @property string street() const { return pStreet; }
-	private @Lookup("street") string pStreet;
+	public  pure @nogc @property ref const(AddressComponent) street() const { return pStreet; }
+	private @Lookup("street") AddressComponent pStreet;
 
 	// Things common to all of the streetLine formatters.
 	private enum numStreetLineFields = 7;
 	private enum streetLineFmtStr = "%-(%s %)";
-	private pure @nogc auto streetLineRange(string[] buf) const
+	private pure @nogc auto streetLineRange(AddressComponent[] buf) const
 	{
 		assert(buf.length >= numStreetLineFields);
 		buf[0] = this.number;
@@ -206,7 +225,7 @@ public struct AddressParseResult
 	/// This is typically constructed by combining other elements in the parsed result.
 	/// However, in some special circumstances, most notably APO/FPO/DPO addresses, the
 	/// street line is set directly and the other elements will be null.
-	public  @property string streetLine()
+	public  @property AddressComponent streetLine()
 	{
 		/+import std.array;
 		import std.regex;
@@ -215,9 +234,10 @@ public struct AddressParseResult
 		{
 			import std.algorithm.iteration : filter;
 			import std.format;
-			string[numStreetLineFields] buf;
-			this.pStreetLine = format!streetLineFmtStr(
-				streetLineRange(buf[]).filter!`a !is null`);
+			AddressComponent[numStreetLineFields] buf;
+			auto filteredList = streetLineRange(buf[]).filter!`a !is null`;
+
+			this.pStreetLine = format!streetLineFmtStr(filteredList);
 			/+auto tmpStreetLine = std.array.join([
 					this.number,
 					this.predirectional,
@@ -233,51 +253,82 @@ public struct AddressParseResult
 					std.regex.ctRegex!`\ +`,
 					" ")
 					.strip();+/
+			this.pStreetLine.streetLineRangeBounds(filteredList);
 			return this.pStreetLine;
 		}
 
 		return this.pStreetLine;
 	}
 
-	private @Lookup("streetLine") string pStreetLine;
+	private @Lookup("streetLine") AddressComponent pStreetLine;
 
 	public auto buildStreetLine(Writer)(ref Writer w) const
 	{
 		import std.algorithm.iteration : filter;
+		import std.exception : assumeUnique;
 		import std.range.primitives;
 
 		static assert(isOutputRange!(Writer, char));
+
+		AddressComponent result;
 
 		// The regex might assign the streetLine specifically, ex: for PO Boxes.
 		if (this.pStreetLine !is null)
 		{
 			auto wSave = w.save;
 			w.put(this.pStreetLine);
-			return w.slice(wSave);
+			result.normalized = w.slice(wSave).assumeUnique;
+			result.loIndex = this.pStreetLine.loIndex;
+			result.hiIndex = this.pStreetLine.hiIndex;
+		}
+		else
+		{
+			// But in most cases, we will need to compose the street line
+			// out of other components.
+			AddressComponent[numStreetLineFields] streetLineFieldsBuf;
+			auto filteredList = streetLineRange(streetLineFieldsBuf[]).filter!`a !is null`;
+
+			result.normalized = w.formattedPut!streetLineFmtStr(filteredList).assumeUnique;
+			result.streetLineRangeBounds(filteredList);
 		}
 
-		// But in most cases, we will need to compose the street line
-		// out of other components.
-		string[numStreetLineFields] streetLineFieldsBuf;
-		return w.formattedPut!streetLineFmtStr(
-				streetLineRange(streetLineFieldsBuf[]).filter!`a !is null`);
+		return result;
+	}
+
+	void streetLineSliceIndices(out size_t lo, out size_t hi)
+	{
+		if (this.pStreetLine !is null)
+		{
+			lo = this.pStreetLine.loIndex;
+			hi = this.pStreetLine.hiIndex;
+		}
+		else
+		{
+			AddressComponent[numStreetLineFields] streetLineFieldsBuf;
+			auto filteredList = streetLineRange(streetLineFieldsBuf[]).filter!`a !is null`;
+
+			AddressComponent tmp;
+			tmp.streetLineRangeBounds(filteredList);
+			lo = tmp.loIndex;
+			hi = tmp.hiIndex;
+		}
 	}
 
 	/// Gets the street suffix, such as "ST" in "500 N MAIN ST".
-	public  pure @nogc @property string suffix() const { return pSuffix; }
-	private @Lookup("suffix") string pSuffix;
+	public  pure @nogc @property ref const(AddressComponent) suffix() const { return pSuffix; }
+	private @Lookup("suffix") AddressComponent pSuffix;
 
 	/// Gets the secondary unit, such as "APT" in "500 N MAIN ST APT 3".
-	public  pure @nogc @property string secondaryUnit() const { return pSecondaryUnit; }
-	private @Lookup("secondaryUnit") string pSecondaryUnit;
+	public  pure @nogc @property ref const(AddressComponent) secondaryUnit() const { return pSecondaryUnit; }
+	private @Lookup("secondaryUnit") AddressComponent pSecondaryUnit;
 
 	/// Gets the secondary unit, such as "3" in "500 N MAIN ST APT 3".
-	public  pure @nogc @property string secondaryNumber() const { return pSecondaryNumber; }
-	private @Lookup("secondaryNumber") string pSecondaryNumber;
+	public  pure @nogc @property ref const(AddressComponent) secondaryNumber() const { return pSecondaryNumber; }
+	private @Lookup("secondaryNumber") AddressComponent pSecondaryNumber;
 
 	/// Gets the ZIP code.
-	public  pure @nogc @property string zip() const { return pZip; }
-	private @Lookup("zip") string pZip;
+	public  pure @nogc @property ref const(AddressComponent) zip() const { return pZip; }
+	private @Lookup("zip") AddressComponent pZip;
 
 	/// Returns a string that represents this instance.
 	/// This method has its result memoized within the AddressParseResult
@@ -342,4 +393,22 @@ private auto formattedPut(alias fmt, Writer, A...)(ref Writer w, A args)
 	auto wSave = w.save;
 	w.formattedWrite!fmt(args);
 	return w.slice(wSave);
+}
+
+// Assigns the loIndex and hiIndex values for the given 'streetLine'
+// AddressComponent using the min/max indices from the given list of
+// contained components.
+private pure @nogc void streetLineRangeBounds(R)(ref AddressComponent streetLine, R list)
+	if( isInputRange!R && is(ElementType!R == AddressComponent) )
+{
+	import std.algorithm.comparison : min, max;
+	size_t lo = size_t.max;
+	size_t hi = 0;
+	foreach(subComponent; list)
+	{
+		lo = min(lo, subComponent.loIndex);
+		hi = max(lo, subComponent.hiIndex);
+	}
+	streetLine.loIndex = lo;
+	streetLine.hiIndex = hi;
 }
