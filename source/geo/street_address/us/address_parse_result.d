@@ -276,7 +276,7 @@ public struct AddressParseResult
 		if (this.pStreetLine !is null)
 		{
 			auto wSave = w.save;
-			w.put(this.pStreetLine);
+			put(w, this.pStreetLine);
 			result.normalized = w.slice(wSave).assumeUnique;
 			result.loIndex = this.pStreetLine.loIndex;
 			result.hiIndex = this.pStreetLine.hiIndex;
@@ -363,11 +363,8 @@ public struct AddressParseResult
 		static assert(isOutputRange!(Writer, char));
 
 		auto wSave = w.save;
-		buildStreetLine(w);
-		w.formattedPut!"; %s, %s  %s"(
-			this.city,
-			this.state,
-			this.zip);
+		auto streetBuilt = buildStreetLine(w);
+		cszToLine(w, streetBuilt, this.city, this.state, this.zip);
 
 		return w.slice(wSave);
 	}
@@ -411,4 +408,69 @@ private pure @nogc void streetLineRangeBounds(R)(ref AddressComponent streetLine
 	}
 	streetLine.loIndex = lo;
 	streetLine.hiIndex = hi;
+}
+
+struct CszSlices
+{
+	char[] city;
+	char[] state;
+	char[] zip;
+}
+
+char[] cszToLine(Writer)(Writer w, string street, string city, string state, string zip)
+{
+	CszSlices throwAway;
+	return cszToLine(w, street, city, state, zip, throwAway);
+}
+
+char[] cszToLine(Writer)(
+	ref Writer    w,
+	string        street,
+	string        city,
+	string        state,
+	string        zip,
+	ref CszSlices outputComponents)
+{
+	import std.string : strip;
+	return _cszToLine(w, strip(street),
+		strip(city), strip(state), strip(zip), outputComponents);
+}
+
+private char[] _cszToLine(Writer)(
+	ref Writer    w,
+	string        street,
+	string        city,
+	string        state,
+	string        zip,
+	ref CszSlices outputComponents)
+{
+	import std.algorithm.searching : endsWith;
+	import std.exception : assumeUnique;
+	import std.range.primitives;
+
+	auto allSave = w.save;
+
+	auto partSave = w.save;
+	if ( street && city )
+		put(w, street.endsWith(",") ? " " : "; ");
+	put(w, city);
+	outputComponents.city = w.slice(partSave);
+
+	partSave = w.save;
+	auto prev = w.slice(allSave).assumeUnique;
+	prev = prev ? prev : street;
+	if ( prev && state )
+		put(w, prev.endsWith(",") ? " " : ", ");
+	put(w, state);
+	outputComponents.state = w.slice(partSave);
+
+	partSave = w.save;
+	prev = w.slice(allSave).assumeUnique;
+	prev = prev ? prev : street;
+	if ( prev && zip )
+		put(w, " ");
+	put(w, zip);
+	outputComponents.zip = w.slice(partSave);
+
+	return w.slice(allSave);
 }

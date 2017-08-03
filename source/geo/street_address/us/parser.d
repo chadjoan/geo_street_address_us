@@ -552,9 +552,11 @@ public auto buildAddressRegex()
 /// (This can simplify some buffer management calculations for the caller.)
 ///
 /// Returns: a slice of 'dst' populated with the result of processing 'src'.
-private /+@nogc+/ char[] normalizeRemovePunctuation(char[] src, char[] dst)
+public /+@nogc+/ char[] normalizeRemovePunctuation(char[] src, char[] dst,
+	string exceptionsToRemove, string exceptionsToKeep)
 {
 	import std.algorithm.mutation : copy;
+	import std.algorithm.searching : canFind;
 	import std.string;
 	import std.uni : isAlphaNum, isWhite;
 	import std.utf : decode;
@@ -580,8 +582,8 @@ private /+@nogc+/ char[] normalizeRemovePunctuation(char[] src, char[] dst)
 		auto ch = decode(src, srcIndex);
 		if ( !isAlphaNum(ch)
 		&&   !isWhite(ch)
-		&&   ch != '/' && ch != '-'
-		&&   ch != '#' && ch != '&')
+		&&   exceptionsToRemove.canFind(ch)
+		&&   !exceptionsToKeep.canFind(ch))
 			continue;
 
 		// Keep this character.
@@ -681,7 +683,7 @@ private /+@nogc+/ FirmAddressElement[] normalize(
 		// If (dst != src), then this operation will not modify the 'src'
 		// slice.  This allows us to avoid corrupting other matches if there
 		// is an overlap.
-		dst = normalizeRemovePunctuation(src,dst);
+		dst = normalizeRemovePunctuation(src,dst,"","/-#&");
 
 		// Update textBuf if we used it.
 		if ( dst.ptr == textBuf.ptr )
