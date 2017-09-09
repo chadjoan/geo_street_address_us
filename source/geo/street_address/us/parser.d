@@ -173,7 +173,7 @@ public /+@nogc+/ AddressParseResult* parseAddress(string input, AddressParseResu
 	SoftAddressElement[AddressParseResult.propertyNames.length] addressElemsBuf;
 
 	// Populate the address elements buffer.
-	auto addressElems = getApplicableFields(input, addressEmplaced, captures, addressElemsBuf[]);
+	auto addressElems = getApplicableFields(address, addressEmplaced, captures, addressElemsBuf[]);
 
 	// Normalize and finish.
 	output.initialize(normalize(addressElems, addressElemsBuf[], textBuf));

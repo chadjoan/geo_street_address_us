@@ -31,7 +31,7 @@ void main(string[] args)
 		}
 		else
 		{
-			writefln("RESULT: %s", result);
+			writeln("RESULT: ", result.toString());
 
 			enum properties = sort(result.propertyNames.dup);
 			foreach (property; aliasSeqOf!properties)
