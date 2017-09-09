@@ -1,20 +1,4 @@
-﻿/// This is an attempt at a D port of the C# port of the Perl CPAN module
-/// Geo::StreetAddress::US.  It's a regex-based street address and
-/// street intersection parser for the United States. 
-///
-/// The original Perl version was written and is copyrighted by
-/// Schuyler D. Erle &lt;schuyler@geocoder.us&gt; and is accessible at
-/// <a href="http://search.cpan.org/~timb/Geo-StreetAddress-US-1.03/US.pm">CPAN</a>.
-///
-/// It says that "this library is free software; you can redistribute it and/or modify 
-/// it under the same terms as Perl itself, either Perl version 5.8.4 or, at 
-/// your option, any later version of Perl 5 you may have available."
-///
-/// According to the <a href="http://dev.perl.org/licenses/">Perl licensing page</a>,
-/// that seems to mean you have a choice between GPL V1 (or at your option, a later version)
-/// or the Artistic License.
-
-module geo.street_address.us.parser;
+﻿module geo.street_address.us.parser;
 
 public import geo.street_address.us.address_parse_result;
 import geo.street_address.us.tests;
