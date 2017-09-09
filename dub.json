@@ -7,9 +7,9 @@
 		"Nicholas Piasecki",
 		"Schuyler D. Erle"
 	],
-	"description": "A D port (of the C# port) of the Perl CPAN module Geo::StreetAddress::US.",
+	"description": "A D port (of the partial C# port) of the Perl CPAN module Geo::StreetAddress::US.",
 	"copyright": "Copyright (C) 2017, Chad Joan; Copyright (C) 2005 by Schuyler D. Erle",
-	"license": "GPL-1.0 or later or Artistic-2.0 or Perl",
+	"license": "GPL-2.0",
 	"stringImportPaths":["source/geo/street_address/us/config"],
 	"excludedSourceFiles" : ["./source/geo/street_address/us/main.d"],
 	"configurations": [
