@@ -389,7 +389,7 @@ public auto buildAddressRegex()
 		chain(
 			directionalsArray.leftColumn,
 			directionalsArray.rightColumn,
-			directionalsArray.rightColumn.map!(x => std.regex.replaceAll(x, ctRegex!`(\w)`, `$1\.`))
+			directionalsArray.rightColumn.map!(x => std.regex.replaceAll(x, regex(`(\w)`), `$1\.`))
 			).join("|");
 
 	enum zipPattern = `\d{5}(?:-?\d{4})?`;
